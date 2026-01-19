@@ -13,8 +13,9 @@ void main() {
     vec4 scene = texture(u_scene, v_uv);
     vec3 bloomColor = texture(u_bloom, v_uv).rgb;
 
-    // Additive bloom, preserve original alpha for transparency
+    // Additive bloom
     vec3 finalColor = scene.rgb + bloomColor * u_bloomIntensity;
 
-    fragColor = vec4(finalColor, scene.a);
+    // Alpha was used for bloom masking only, restore to 1.0 for final output
+    fragColor = vec4(finalColor, 1.0);
 }

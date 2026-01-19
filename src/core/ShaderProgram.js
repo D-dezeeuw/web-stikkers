@@ -1,11 +1,25 @@
+import { loadShaderSource } from '../utils/ShaderLoader.js'
+
 export class ShaderProgram {
-    constructor(gl, vertexSource, fragmentSource) {
+    constructor(gl, vertexSource = null, fragmentSource = null) {
         this.gl = gl
         this.program = null
         this.uniformLocations = new Map()
         this.attributeLocations = new Map()
 
+        // Only compile if sources provided (supports deferred loading)
+        if (vertexSource && fragmentSource) {
+            this.compile(vertexSource, fragmentSource)
+        }
+    }
+
+    async load(vertexPath, fragmentPath) {
+        const [vertexSource, fragmentSource] = await Promise.all([
+            loadShaderSource(vertexPath),
+            loadShaderSource(fragmentPath)
+        ])
         this.compile(vertexSource, fragmentSource)
+        return this
     }
 
     compile(vertexSource, fragmentSource) {

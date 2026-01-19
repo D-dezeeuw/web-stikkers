@@ -1,8 +1,10 @@
+import { CONFIG } from '../config.js'
+
 export class CardController {
     constructor(card, canvas) {
         this.card = card
         this.canvas = canvas
-        this.maxTilt = 0.35  // ~20 degrees in radians
+        this.maxTilt = CONFIG.card.maxTiltRadians
 
         this.mouseX = 0
         this.mouseY = 0
@@ -10,8 +12,14 @@ export class CardController {
 
         // Idle animation parameters
         this.time = 0
-        this.idleSpeed = 1.5  // Wobble speed
-        this.idleAmount = 0.15  // Wobble amplitude (radians, ~8 degrees)
+        this.idleSpeed = CONFIG.idle.speed
+        this.idleAmount = CONFIG.idle.amplitude
+
+        // Bind methods for proper event listener removal
+        this.handleMouseMove = this.onMouseMove.bind(this)
+        this.handleMouseLeave = this.onMouseLeave.bind(this)
+        this.handleMouseEnter = this.onMouseEnter.bind(this)
+        this.handleTouchMove = this.onTouchMove.bind(this)
 
         this.bindEvents()
     }
@@ -28,13 +36,13 @@ export class CardController {
     }
 
     bindEvents() {
-        this.canvas.addEventListener('mousemove', (e) => this.onMouseMove(e))
-        this.canvas.addEventListener('mouseleave', () => this.onMouseLeave())
-        this.canvas.addEventListener('mouseenter', () => this.onMouseEnter())
+        this.canvas.addEventListener('mousemove', this.handleMouseMove)
+        this.canvas.addEventListener('mouseleave', this.handleMouseLeave)
+        this.canvas.addEventListener('mouseenter', this.handleMouseEnter)
 
         // Touch support
-        this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e))
-        this.canvas.addEventListener('touchend', () => this.onMouseLeave())
+        this.canvas.addEventListener('touchmove', this.handleTouchMove)
+        this.canvas.addEventListener('touchend', this.handleMouseLeave)
     }
 
     onMouseMove(event) {
@@ -84,10 +92,10 @@ export class CardController {
     }
 
     destroy() {
-        this.canvas.removeEventListener('mousemove', this.onMouseMove)
-        this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
-        this.canvas.removeEventListener('mouseenter', this.onMouseEnter)
-        this.canvas.removeEventListener('touchmove', this.onTouchMove)
-        this.canvas.removeEventListener('touchend', this.onMouseLeave)
+        this.canvas.removeEventListener('mousemove', this.handleMouseMove)
+        this.canvas.removeEventListener('mouseleave', this.handleMouseLeave)
+        this.canvas.removeEventListener('mouseenter', this.handleMouseEnter)
+        this.canvas.removeEventListener('touchmove', this.handleTouchMove)
+        this.canvas.removeEventListener('touchend', this.handleMouseLeave)
     }
 }

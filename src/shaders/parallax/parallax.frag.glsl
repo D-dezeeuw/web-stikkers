@@ -205,5 +205,6 @@ void main() {
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
 
-    fragColor = vec4(finalColor, baseColor.a);
+    // Alpha = mask for selective bloom (only effect regions bloom)
+    fragColor = vec4(finalColor, mask);
 }

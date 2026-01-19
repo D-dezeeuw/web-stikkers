@@ -1,4 +1,16 @@
 import { Matrix4 } from '../math/Matrix4.js'
+import { CONFIG } from '../config.js'
+
+const TEXTURE_BINDINGS = [
+    { slot: 0, name: 'base', uniform: 'u_baseTexture' },
+    { slot: 1, name: 'rainbow', uniform: 'u_rainbowGradient' },
+    { slot: 2, name: 'noise', uniform: 'u_noiseTexture' },
+    { slot: 3, name: 'foil', uniform: 'u_foilPattern' },
+    { slot: 4, name: 'depth', uniform: 'u_depthMap' },
+    { slot: 5, name: 'effectMask', uniform: 'u_effectMask' },
+    { slot: 6, name: 'text', uniform: 'u_textTexture' },
+    { slot: 7, name: 'number', uniform: 'u_numberTexture' }
+]
 
 export class CardRenderer {
     constructor(gl, geometry, shaderManager) {
@@ -9,10 +21,10 @@ export class CardRenderer {
         this.viewMatrix = new Matrix4()
         this.projectionMatrix = new Matrix4()
 
-        // Target: card fills ~85% of canvas height
+        // Target: card fills configured percent of canvas height
         // With card height 1.6, FOV 45°: Z = cardHeight / (fillPercent * 2 * tan(FOV/2))
         const cardHeight = 1.6
-        const fillPercent = 0.85
+        const fillPercent = CONFIG.card.viewportFillPercent
         const fov = Math.PI / 4
         const cameraZ = cardHeight / (fillPercent * 2 * Math.tan(fov / 2))
 
@@ -78,53 +90,13 @@ export class CardRenderer {
         shader.setUniform1f('u_maskActive', effectSettings.maskActive ? 1.0 : 0.0)
         shader.setUniform1f('u_isBaseShader', effectSettings.isBaseShader ? 1.0 : 0.0)
 
-        // Bind textures
-        const baseTexture = card.getTexture('base')
-        if (baseTexture) {
-            baseTexture.bind(0)
-            shader.setUniform1i('u_baseTexture', 0)
-        }
-
-        const rainbowTexture = card.getTexture('rainbow')
-        if (rainbowTexture) {
-            rainbowTexture.bind(1)
-            shader.setUniform1i('u_rainbowGradient', 1)
-        }
-
-        const noiseTexture = card.getTexture('noise')
-        if (noiseTexture) {
-            noiseTexture.bind(2)
-            shader.setUniform1i('u_noiseTexture', 2)
-        }
-
-        const foilTexture = card.getTexture('foil')
-        if (foilTexture) {
-            foilTexture.bind(3)
-            shader.setUniform1i('u_foilPattern', 3)
-        }
-
-        const depthTexture = card.getTexture('depth')
-        if (depthTexture) {
-            depthTexture.bind(4)
-            shader.setUniform1i('u_depthMap', 4)
-        }
-
-        const effectMask = card.getTexture('effectMask')
-        if (effectMask) {
-            effectMask.bind(5)
-            shader.setUniform1i('u_effectMask', 5)
-        }
-
-        const textTexture = card.getTexture('text')
-        if (textTexture) {
-            textTexture.bind(6)
-            shader.setUniform1i('u_textTexture', 6)
-        }
-
-        const numberTexture = card.getTexture('number')
-        if (numberTexture) {
-            numberTexture.bind(7)
-            shader.setUniform1i('u_numberTexture', 7)
+        // Bind textures using configuration
+        for (const { slot, name, uniform } of TEXTURE_BINDINGS) {
+            const texture = card.getTexture(name)
+            if (texture) {
+                texture.bind(slot)
+                shader.setUniform1i(uniform, slot)
+            }
         }
 
         // Draw

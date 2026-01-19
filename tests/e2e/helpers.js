@@ -15,17 +15,37 @@ export async function waitForApp(page) {
 
 /**
  * Set card rotation programmatically and trigger render
+ * Pauses the render loop to ensure deterministic screenshots
  */
 export async function setRotation(page, x, y) {
     await page.evaluate(({ x, y }) => {
         const app = window.cardApp
+
+        // Pause the render loop
+        app.isRunning = false
+
+        // Freeze time for deterministic rendering
+        app.renderer.time = 0
+
+        // Set rotation
         app.card.rotation.x = x
         app.card.rotation.y = y
         app.card.targetRotation.x = x
         app.card.targetRotation.y = y
         app.card.updateModelMatrix()
+
+        // Render with controlled state
+        app.bloomPass.beginSceneRender()
         app.context.clear()
-        app.renderer.render(app.card, app.controller, 0)
+        app.renderer.render(app.card, app.controller, 0, {
+            hdrEnabled: false,
+            saturationBoostEnabled: false,
+            showMask: false,
+            maskActive: true,
+            isBaseShader: app.shaderManager.getActiveName() === 'base'
+        })
+        app.bloomPass.endSceneRender()
+        app.bloomPass.renderBloom()
     }, { x, y })
 
     // Wait for render to complete

@@ -28,7 +28,7 @@ export default defineConfig({
     ],
 
     webServer: {
-        command: 'python3 -m http.server 8080',
+        command: 'npm run dev',
         url: 'http://localhost:8080',
         reuseExistingServer: !process.env.CI,
         timeout: 10000,

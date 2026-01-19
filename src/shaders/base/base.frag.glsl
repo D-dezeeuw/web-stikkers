@@ -57,5 +57,6 @@ void main() {
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
 
-    fragColor = vec4(finalColor, baseColor.a);
+    // Alpha = 0 means no bloom contribution (base shader has no metallic effects)
+    fragColor = vec4(finalColor, 0.0);
 }
