@@ -35,17 +35,34 @@ export async function setRotation(page, x, y) {
         app.card.updateModelMatrix()
 
         // Render with controlled state
-        app.bloomPass.beginSceneRender()
-        app.context.clear()
-        app.renderer.render(app.card, app.controller, 0, {
+        const effectSettings = {
             hdrEnabled: false,
             saturationBoostEnabled: false,
             showMask: false,
             maskActive: true,
             isBaseShader: app.shaderManager.getActiveName() === 'base'
-        })
-        app.bloomPass.endSceneRender()
-        app.bloomPass.renderBloom()
+        }
+
+        if (app.bloomPass.enabled) {
+            app.bloomPass.beginSceneRender()
+            app.context.clear()
+            app.renderer.render(app.card, app.controller, 0, effectSettings)
+            app.bloomPass.endSceneRender()
+            app.bloomPass.renderBloom()
+            app.effectsPass.render(
+                app.effectsPass.getSceneTexture(),
+                effectSettings
+            )
+        } else {
+            app.effectsPass.beginSceneRender()
+            app.context.clear()
+            app.renderer.render(app.card, app.controller, 0, effectSettings)
+            app.effectsPass.endSceneRender()
+            app.effectsPass.render(
+                app.effectsPass.getSceneTexture(),
+                effectSettings
+            )
+        }
     }, { x, y })
 
     // Wait for render to complete

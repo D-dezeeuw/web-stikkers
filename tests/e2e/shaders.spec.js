@@ -15,6 +15,7 @@ test.describe('Card Shader Visual Tests', () => {
     test('card renders at neutral position', async ({ page }) => {
         await page.goto('/')
         await waitForApp(page)
+        await selectShader(page, 'base')
         await setRotation(page, 0, 0)
 
         // Take screenshot and compare to baseline
@@ -27,6 +28,7 @@ test.describe('Card Shader Visual Tests', () => {
     test('card renders at tilted position', async ({ page }) => {
         await page.goto('/')
         await waitForApp(page)
+        await selectShader(page, 'base')
         await setRotation(page, 0.3, 0.2)
 
         const canvas = page.locator('#card-canvas')
@@ -269,6 +271,37 @@ test.describe('Card Shader Visual Tests', () => {
         // - Depth-based shadows and highlights
         const diff = calculateDifference(basePixels, parallaxPixels)
         expect(diff, 'parallax should visually differ from base shader').toBeGreaterThan(0.01)
+    })
+
+    test('no smearing when card moves (background clears properly)', async ({ page }) => {
+        await page.goto('/')
+        await waitForApp(page)
+        await selectShader(page, 'base')
+
+        // Render at neutral position first
+        await setRotation(page, 0, 0)
+        const neutralPixels = await getCanvasPixels(page)
+
+        // Check that extreme corners are dark (background)
+        // These corners should be outside the card area
+        const getCornerBrightness = (pixels, x, y) => {
+            const px = Math.floor(x * pixels.width)
+            const py = Math.floor((1 - y) * pixels.height) // flip Y for WebGL
+            const i = (py * pixels.width + px) * 4
+            return pixels.data[i] * 0.299 + pixels.data[i+1] * 0.587 + pixels.data[i+2] * 0.114
+        }
+
+        // Corners at 2% from edges should be background
+        const corners = [
+            getCornerBrightness(neutralPixels, 0.02, 0.02),
+            getCornerBrightness(neutralPixels, 0.98, 0.02),
+            getCornerBrightness(neutralPixels, 0.02, 0.98),
+            getCornerBrightness(neutralPixels, 0.98, 0.98)
+        ]
+
+        // At least some corners should be dark (< 5 brightness = nearly black)
+        const darkCorners = corners.filter(b => b < 5).length
+        expect(darkCorners, 'corners should be dark background').toBeGreaterThanOrEqual(2)
     })
 
 })

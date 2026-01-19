@@ -143,5 +143,5 @@ void main() {
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
 
     // Alpha = mask for selective bloom (only effect regions bloom)
-    fragColor = vec4(finalColor, mask);
+    fragColor = vec4(finalColor, 1.0);
 }

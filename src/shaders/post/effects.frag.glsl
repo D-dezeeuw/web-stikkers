@@ -4,14 +4,14 @@ precision highp float;
 in vec2 v_uv;
 
 uniform sampler2D u_scene;
-uniform sampler2D u_numberTexture;
 uniform float u_hdrEnabled;
 uniform float u_saturationBoost;
 
 out vec4 fragColor;
 
 void main() {
-    vec3 color = texture(u_scene, v_uv).rgb;
+    vec4 scene = texture(u_scene, v_uv);
+    vec3 color = scene.rgb;
 
     // HDR + ACES Filmic Tonemapping
     if (u_hdrEnabled > 0.5) {
@@ -30,10 +30,6 @@ void main() {
         color = mix(gray, color, 1.5);
     }
 
-    // Number overlay (white text)
-    float numberAlpha = texture(u_numberTexture, v_uv).r;
-    color = mix(color, vec3(1.0), numberAlpha);
-
-    // Alpha was used for bloom masking only, final output is fully opaque
-    fragColor = vec4(color, 1.0);
+    // Preserve scene alpha for transparency
+    fragColor = vec4(color, scene.a);
 }

@@ -121,12 +121,13 @@ export class EffectsPass {
     }
 
     // Apply effects to the scene texture and render to screen
-    render(sceneTexture, numberTexture, effectSettings) {
+    render(sceneTexture, effectSettings) {
         const gl = this.gl
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         gl.viewport(0, 0, this.width, this.height)
         gl.disable(gl.DEPTH_TEST)
+        gl.disable(gl.BLEND)  // Fullscreen quad replaces all pixels, no blending needed
 
         this.shader.use()
 
@@ -134,12 +135,6 @@ export class EffectsPass {
         gl.activeTexture(gl.TEXTURE0)
         gl.bindTexture(gl.TEXTURE_2D, sceneTexture)
         this.shader.setUniform1i('u_scene', 0)
-
-        // Bind number texture
-        if (numberTexture) {
-            numberTexture.bind(1)
-            this.shader.setUniform1i('u_numberTexture', 1)
-        }
 
         // Set effect uniforms
         this.shader.setUniform1f('u_hdrEnabled', effectSettings.hdrEnabled ? 1.0 : 0.0)
@@ -151,6 +146,7 @@ export class EffectsPass {
         gl.bindVertexArray(null)
 
         gl.enable(gl.DEPTH_TEST)
+        gl.enable(gl.BLEND)  // Restore for next frame
     }
 
     // Get our scene texture for when we need to pass it to another pass

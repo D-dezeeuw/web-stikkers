@@ -40,8 +40,8 @@ export class CardController {
         this.canvas.addEventListener('mouseleave', this.handleMouseLeave)
         this.canvas.addEventListener('mouseenter', this.handleMouseEnter)
 
-        // Touch support
-        this.canvas.addEventListener('touchmove', this.handleTouchMove)
+        // Touch support (passive: false needed for preventDefault to stop page scroll)
+        this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false })
         this.canvas.addEventListener('touchend', this.handleMouseLeave)
     }
 

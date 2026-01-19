@@ -110,9 +110,10 @@ class CardShaderApp {
         this.bloomPass.resize(this.canvas.width, this.canvas.height)
         // Bloom outputs to effects pass framebuffer
         this.bloomPass.setOutputFBO(this.effectsPass.sceneFBO.fbo)
+        this.bloomPass.enabled = true  // Enable bloom by default
 
         // Set initial shader and mask
-        this.shaderManager.use('foil')
+        this.shaderManager.use('holographic')
         const zeldaCard = this.cards['zelda']
         this.card.setTexture('base', zeldaCard.texture)
         this.card.setTexture('effectMask', zeldaCard.normalMap || zeldaCard.brightnessMask)
@@ -187,7 +188,6 @@ class CardShaderApp {
             // Apply effects and render to screen
             this.effectsPass.render(
                 this.effectsPass.getSceneTexture(),
-                this.card.getTexture('number'),
                 effectSettings
             )
         } else {
@@ -200,7 +200,6 @@ class CardShaderApp {
             // Apply effects and render to screen
             this.effectsPass.render(
                 this.effectsPass.getSceneTexture(),
-                this.card.getTexture('number'),
                 effectSettings
             )
         }

@@ -11,25 +11,17 @@ out vec4 fragColor;
 void main() {
     vec4 color = texture(u_texture, v_uv);
 
-    // Alpha channel is used as bloom mask (0 = no bloom, 1 = full bloom)
-    float bloomMask = color.a;
+    // Only extract HDR overflow (values > 1.0) - this is where effects add brightness
+    // Regular texture stays in 0-1 range and won't bloom
+    float maxChannel = max(max(color.r, color.g), color.b);
+    float hdrOverflow = max(0.0, maxChannel - 1.0);
 
-    // Skip pixels with no bloom contribution
-    if (bloomMask < 0.01) {
-        fragColor = vec4(0.0);
-        return;
-    }
-
-    // Calculate luminance
-    float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-
-    // Extract bright areas above threshold, masked by alpha
-    if (brightness > u_threshold) {
-        // Soft knee - gradual transition
-        float soft = brightness - u_threshold;
-        float contribution = soft / (soft + 0.5);
-        fragColor = vec4(color.rgb * contribution * bloomMask, 1.0);
+    if (hdrOverflow > 0.0) {
+        // Extract the HDR portion that exceeds 1.0
+        float brightness = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
+        float contribution = hdrOverflow / (hdrOverflow + 0.3);
+        fragColor = vec4(color.rgb * contribution, 1.0);
     } else {
-        fragColor = vec4(0.0);
+        fragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
 }

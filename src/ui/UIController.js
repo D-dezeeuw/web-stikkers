@@ -127,7 +127,8 @@ export class UIController {
     // Sync dropdown values with app state
     syncInitialState() {
         this.cardSelect.value = 'zelda'
-        this.shaderSelect.value = 'foil'
+        this.shaderSelect.value = 'holographic'
         this.maskSelect.value = 'normal-map'
+        this.bloomToggle.checked = this.app.bloomPass.enabled
     }
 }
