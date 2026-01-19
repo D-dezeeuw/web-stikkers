@@ -15,9 +15,8 @@ class LazyCardApp {
         this.cardNumber = cardNumber
         this.cardType = cardType
 
-        // Create static image overlay
+        // Create static image overlay (styled via CSS)
         this.staticImage = document.createElement('img')
-        this.staticImage.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;'
         this.canvas.parentElement.appendChild(this.staticImage)
 
         // State
@@ -27,9 +26,10 @@ class LazyCardApp {
         this.lastTime = 0
         this.gl = null
 
-        // Bind events
-        this.canvas.parentElement.addEventListener('mouseenter', () => this.activate())
-        this.canvas.parentElement.addEventListener('mouseleave', () => this.deactivate())
+        // Bind events (on card-cell for grid cards, or parent for overlay)
+        const hoverTarget = this.canvas.closest('.card-cell') || this.canvas.parentElement
+        hoverTarget.addEventListener('mouseenter', () => this.activate())
+        hoverTarget.addEventListener('mouseleave', () => this.deactivate())
     }
 
     async renderStaticFrame() {
@@ -128,11 +128,14 @@ class LazyCardApp {
 
         const cardData = cards[this.cardType]
         this.card.setTexture('base', cardData.texture)
-        this.card.setTexture('effectMask', cardData.normalMap || cardData.brightnessMask)
+        if (this.cardType === 'zelda') {
+            this.card.setTexture('effectMask', cardData.normalMap || cardData.brightnessMask)
+        }
 
         // Create text textures
         this.textRenderer = new TextRenderer(this.gl)
-        this.textRenderer.createTextTextures('Link', this.cardNumber, this.card)
+        const cardName = this.cardType === 'zelda' ? 'Link' : 'Demo'
+        this.textRenderer.createTextTextures(cardName, this.cardNumber, this.card)
 
         // Create controller and renderer
         this.controller = new CardController(this.card, this.canvas)
@@ -212,7 +215,7 @@ class LazyCardApp {
         const oldCanvas = this.canvas
         const newCanvas = document.createElement('canvas')
         newCanvas.id = oldCanvas.id
-        newCanvas.style.cssText = 'width:100%;height:100%;display:none;'
+        newCanvas.style.display = 'none'
         parent.replaceChild(newCanvas, oldCanvas)
         this.canvas = newCanvas
     }
@@ -271,7 +274,7 @@ class LazyCardApp {
             hdrEnabled: false,
             saturationBoostEnabled: false,
             showMask: false,
-            maskActive: true,
+            maskActive: false,
             isBaseShader: this.shaderName === 'base'
         }
 
@@ -304,11 +307,73 @@ const shaders = [
     'refractor', 'starburst', 'etched', 'parallax', 'base'
 ]
 
+// Overlay card manager
+class OverlayManager {
+    constructor() {
+        this.overlay = document.getElementById('overlay')
+        this.canvas = document.getElementById('overlay-canvas')
+        this.cardApp = null
+        this.isOpen = false
+
+        // Close on overlay click
+        this.overlay.addEventListener('click', (e) => {
+            if (e.target === this.overlay || e.target.closest('.overlay-card')) {
+                this.close()
+            }
+        })
+    }
+
+    async open(shaderName, cardNumber, cardType) {
+        if (this.isOpen) return
+        this.isOpen = true
+
+        // Show overlay
+        this.overlay.classList.add('active')
+
+        // Create a new card app for the overlay
+        this.cardApp = new LazyCardApp(this.canvas, shaderName, cardNumber, cardType)
+
+        // Override the static image creation since overlay doesn't need it
+        this.cardApp.staticImage.style.display = 'none'
+
+        // Activate immediately
+        await this.cardApp.activate()
+    }
+
+    close() {
+        if (!this.isOpen) return
+        this.isOpen = false
+
+        // Hide overlay
+        this.overlay.classList.remove('active')
+
+        // Cleanup card app (stop rendering but don't let it replace canvas)
+        if (this.cardApp) {
+            this.cardApp.isActive = false
+            this.cardApp.isRunning = false
+            this.cardApp.controller?.destroy()
+            this.cardApp.shaderManager?.destroy()
+            this.cardApp.geometry?.destroy()
+            this.cardApp.textRenderer?.destroy()
+            this.cardApp = null
+        }
+
+        // Clear overlay-card completely and create fresh canvas
+        const overlayCard = this.overlay.querySelector('.overlay-card')
+        overlayCard.innerHTML = ''
+        const newCanvas = document.createElement('canvas')
+        newCanvas.id = 'overlay-canvas'
+        overlayCard.appendChild(newCanvas)
+        this.canvas = newCanvas
+    }
+}
+
 async function initGrid() {
     // Wait for layout
     await new Promise(r => setTimeout(r, 100))
 
     const cards = []
+    const overlayManager = new OverlayManager()
 
     // Create all 20 card instances
     for (let i = 0; i < 20; i++) {
@@ -319,15 +384,18 @@ async function initGrid() {
 
         const app = new LazyCardApp(canvas, shaders[shaderIndex], cardNumber, cardType)
         cards.push(app)
+
+        // Add click handler to open overlay (on the card-cell)
+        const cardCell = canvas.closest('.card-cell')
+        cardCell.addEventListener('click', () => {
+            overlayManager.open(shaders[shaderIndex], cardNumber, cardType)
+        })
     }
 
     // Render static frames sequentially (to avoid context limit)
     for (let i = 0; i < cards.length; i++) {
-        console.log(`Rendering static frame for card ${i + 1}/20...`)
         await cards[i].renderStaticFrame()
     }
-
-    console.log('All 20 cards ready (hover to interact)')
 }
 
 initGrid().catch(console.error)

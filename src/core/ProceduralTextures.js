@@ -1,12 +1,12 @@
 import { Texture } from './Texture.js'
 
 // Seeded random for deterministic noise
-function seededRandom(seed) {
+export function seededRandom(seed) {
     const x = Math.sin(seed) * 10000
     return x - Math.floor(x)
 }
 
-function hslToRgb(h, s, l) {
+export function hslToRgb(h, s, l) {
     h /= 360
     let r, g, b
 
