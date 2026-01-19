@@ -1,4 +1,3 @@
-import { WebGLContext } from './core/WebGLContext.js'
 import { Geometry } from './core/Geometry.js'
 import { createRainbowGradient, createNoiseTexture, createFoilPattern, createDepthMap } from './core/ProceduralTextures.js'
 import { createFullMask } from './core/MaskFactory.js'
@@ -6,33 +5,88 @@ import { ShaderManager } from './shaders/ShaderManager.js'
 import { Card } from './card/Card.js'
 import { CardController } from './card/CardController.js'
 import { CardRenderer } from './card/CardRenderer.js'
-import { BloomPass } from './post/BloomPass.js'
-import { EffectsPass } from './post/EffectsPass.js'
 import { CardFactory } from './factories/CardFactory.js'
 import { TextRenderer } from './factories/TextRenderer.js'
 
-class MiniCardApp {
-    constructor(canvas, shaderName = 'holographic', cardNumber = '001', cardType = 'zelda') {
+class LazyCardApp {
+    constructor(canvas, shaderName, cardNumber, cardType) {
         this.canvas = canvas
         this.shaderName = shaderName
         this.cardNumber = cardNumber
         this.cardType = cardType
+
+        // Create static image overlay
+        this.staticImage = document.createElement('img')
+        this.staticImage.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;'
+        this.canvas.parentElement.appendChild(this.staticImage)
+
+        // State
+        this.isActive = false
+        this.isInitializing = false
         this.isRunning = false
         this.lastTime = 0
+        this.gl = null
+
+        // Bind events
+        this.canvas.parentElement.addEventListener('mouseenter', () => this.activate())
+        this.canvas.parentElement.addEventListener('mouseleave', () => this.deactivate())
     }
 
-    async init() {
-        // Initialize WebGL
-        this.context = new WebGLContext(this.canvas)
-        this.gl = this.context.init()
+    async renderStaticFrame() {
+        // Temporarily set active for initialization
+        this.isActive = true
 
-        // Set canvas size
-        const rect = this.canvas.getBoundingClientRect()
+        // Initialize just to render one frame
+        await this.initWebGL()
+
+        // Render a few frames to ensure everything is loaded
+        for (let i = 0; i < 3; i++) {
+            this.renderFrame(0.016)
+            await new Promise(r => setTimeout(r, 16))
+        }
+
+        // Capture snapshot
+        this.captureSnapshot()
+
+        // Mark inactive and destroy
+        this.isActive = false
+        this.destroyWebGL()
+    }
+
+    async initWebGL() {
+        if (this.gl) return // Already initialized
+
+        // Get size from parent (canvas may be hidden)
+        const parent = this.canvas.parentElement
+        const rect = parent.getBoundingClientRect()
         const width = rect.width || 200
         const height = rect.height || 320
-        this.canvas.width = width * (window.devicePixelRatio || 1)
-        this.canvas.height = height * (window.devicePixelRatio || 1)
-        this.context.resize()
+        const dpr = window.devicePixelRatio || 1
+
+        // Set canvas size BEFORE init to avoid 0-size issues
+        this.canvas.width = width * dpr
+        this.canvas.height = height * dpr
+
+        // Initialize WebGL
+        this.gl = this.canvas.getContext('webgl2', {
+            antialias: true,
+            alpha: true,
+            premultipliedAlpha: false,
+            preserveDrawingBuffer: true
+        })
+
+        if (!this.gl) {
+            throw new Error('Failed to create WebGL context')
+        }
+
+        // Configure GL state
+        const gl = this.gl
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.enable(gl.DEPTH_TEST)
+        gl.depthFunc(gl.LEQUAL)
+        gl.clearColor(0, 0, 0, 0)
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
         // Create geometry
         this.geometry = new Geometry(this.gl)
@@ -41,6 +95,12 @@ class MiniCardApp {
         // Create shader manager and load shaders
         this.shaderManager = new ShaderManager(this.gl)
         await this.loadShaders()
+
+        // Check if deactivated during async operation - cleanup partial state
+        if (!this.isActive) {
+            this.cleanupPartialInit()
+            return
+        }
 
         // Create card
         this.card = new Card({
@@ -59,41 +119,28 @@ class MiniCardApp {
         // Load card texture
         this.cardFactory = new CardFactory(this.gl)
         const cards = await this.cardFactory.loadCardTextures()
+
+        // Check if deactivated during async operation - cleanup partial state
+        if (!this.isActive) {
+            this.cleanupPartialInit()
+            return
+        }
+
         const cardData = cards[this.cardType]
         this.card.setTexture('base', cardData.texture)
         this.card.setTexture('effectMask', cardData.normalMap || cardData.brightnessMask)
 
-        // Create text textures (required by shaders)
+        // Create text textures
         this.textRenderer = new TextRenderer(this.gl)
         this.textRenderer.createTextTextures('Link', this.cardNumber, this.card)
 
         // Create controller and renderer
         this.controller = new CardController(this.card, this.canvas)
         this.renderer = new CardRenderer(this.gl, this.geometry, this.shaderManager)
-
-        // Set up projection matrix (required for rendering!)
         this.renderer.updateProjection(this.canvas.width / this.canvas.height)
-
-        // Create effects pass
-        this.effectsPass = new EffectsPass(this.gl)
-        await this.effectsPass.loadShader()
-        this.effectsPass.resize(this.canvas.width, this.canvas.height)
-
-        // Create bloom pass
-        this.bloomPass = new BloomPass(this.gl)
-        await this.bloomPass.loadShaders()
-        this.bloomPass.resize(this.canvas.width, this.canvas.height)
-        this.bloomPass.setOutputFBO(this.effectsPass.sceneFBO.fbo)
-        this.bloomPass.enabled = true
-        this.bloomPass.intensity = 1.2
 
         // Set shader
         this.shaderManager.use(this.shaderName)
-
-        // Start render loop
-        this.isRunning = true
-        this.lastTime = performance.now()
-        this.render()
     }
 
     async loadShaders() {
@@ -112,15 +159,113 @@ class MiniCardApp {
         ])
     }
 
-    render() {
-        if (!this.isRunning) return
+    captureSnapshot() {
+        // Capture canvas to image
+        this.staticImage.src = this.canvas.toDataURL('image/png')
+        this.staticImage.style.display = 'block'
+        this.canvas.style.display = 'none'
+    }
 
-        const currentTime = performance.now()
-        const deltaTime = (currentTime - this.lastTime) / 1000
-        this.lastTime = currentTime
+    cleanupPartialInit() {
+        // Clean up any partially initialized resources
+        this.shaderManager?.destroy()
+        this.geometry?.destroy()
+        this.textRenderer?.destroy()
+        this.controller?.destroy()
 
-        this.controller.update(deltaTime)
+        this.gl = null
+        this.geometry = null
+        this.shaderManager = null
+        this.card = null
+        this.controller = null
+        this.renderer = null
+        this.cardFactory = null
+        this.textRenderer = null
+    }
+
+    showCanvas() {
+        this.staticImage.style.display = 'none'
+        this.canvas.style.display = 'block'
+    }
+
+    destroyWebGL() {
+        if (!this.gl) return
+
+        // Clean up resources
+        this.controller?.destroy()
+        this.shaderManager?.destroy()
+        this.geometry?.destroy()
+        this.textRenderer?.destroy()
+
+        // Clear references - browser will reclaim context when needed
+        this.gl = null
+        this.geometry = null
+        this.shaderManager = null
+        this.card = null
+        this.controller = null
+        this.renderer = null
+        this.cardFactory = null
+        this.textRenderer = null
+
+        // Reset canvas to allow fresh context
+        const parent = this.canvas.parentElement
+        const oldCanvas = this.canvas
+        const newCanvas = document.createElement('canvas')
+        newCanvas.id = oldCanvas.id
+        newCanvas.style.cssText = 'width:100%;height:100%;display:none;'
+        parent.replaceChild(newCanvas, oldCanvas)
+        this.canvas = newCanvas
+    }
+
+    async activate() {
+        if (this.isActive || this.isInitializing) return
+        this.isActive = true
+        this.isInitializing = true
+
+        try {
+            // Initialize WebGL
+            await this.initWebGL()
+
+            // Check if deactivated during init
+            if (!this.isActive) {
+                this.isInitializing = false
+                return
+            }
+
+            this.showCanvas()
+
+            // Start render loop
+            this.isRunning = true
+            this.lastTime = performance.now()
+            this.renderLoop()
+        } catch (err) {
+            console.error(`Failed to activate card ${this.cardNumber}:`, err)
+            this.isActive = false
+        } finally {
+            this.isInitializing = false
+        }
+    }
+
+    deactivate() {
+        if (!this.isActive) return
+        this.isActive = false
+        this.isRunning = false
+
+        // If still initializing, just mark as inactive - initWebGL will check and bail out
+        if (this.isInitializing) return
+
+        // Capture final state
+        if (this.gl) {
+            this.captureSnapshot()
+            this.destroyWebGL()
+        }
+    }
+
+    renderFrame(deltaTime) {
+        if (!this.gl) return
+
         this.card.update(deltaTime)
+        this.controller?.update(deltaTime)
 
         const effectSettings = {
             hdrEnabled: false,
@@ -131,8 +276,6 @@ class MiniCardApp {
         }
 
         const gl = this.gl
-
-        // Simple direct render (no bloom/effects) for testing
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         gl.viewport(0, 0, this.canvas.width, this.canvas.height)
         gl.clearColor(0.1, 0.1, 0.15, 1.0)
@@ -140,41 +283,51 @@ class MiniCardApp {
         gl.disable(gl.BLEND)
 
         this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
+    }
 
-        requestAnimationFrame(() => this.render())
+    renderLoop() {
+        if (!this.isRunning || !this.gl) return
+
+        const currentTime = performance.now()
+        const deltaTime = (currentTime - this.lastTime) / 1000
+        this.lastTime = currentTime
+
+        this.renderFrame(deltaTime)
+
+        requestAnimationFrame(() => this.renderLoop())
     }
 }
 
-// Initialize 20 cards with different shaders
+// Shader list
 const shaders = [
     'holographic', 'foil', 'prizm', 'galaxy', 'cracked-ice',
     'refractor', 'starburst', 'etched', 'parallax', 'base'
 ]
 
 async function initGrid() {
-    // Wait for layout to settle
+    // Wait for layout
     await new Promise(r => setTimeout(r, 100))
 
-    const apps = []
+    const cards = []
 
-    // First 10: Zelda card with all shaders
-    for (let i = 0; i < 10; i++) {
+    // Create all 20 card instances
+    for (let i = 0; i < 20; i++) {
         const canvas = document.getElementById(`card-${i}`)
+        const cardType = i < 10 ? 'zelda' : 'demo-thick'
+        const shaderIndex = i % 10
         const cardNumber = `${String(i + 1).padStart(3, '0')}/020`
-        const app = new MiniCardApp(canvas, shaders[i], cardNumber, 'zelda')
-        apps.push(app.init())
+
+        const app = new LazyCardApp(canvas, shaders[shaderIndex], cardNumber, cardType)
+        cards.push(app)
     }
 
-    // Next 10: Demo thick card with all shaders
-    for (let i = 0; i < 10; i++) {
-        const canvas = document.getElementById(`card-${i + 10}`)
-        const cardNumber = `${String(i + 11).padStart(3, '0')}/020`
-        const app = new MiniCardApp(canvas, shaders[i], cardNumber, 'demo-thick')
-        apps.push(app.init())
+    // Render static frames sequentially (to avoid context limit)
+    for (let i = 0; i < cards.length; i++) {
+        console.log(`Rendering static frame for card ${i + 1}/20...`)
+        await cards[i].renderStaticFrame()
     }
 
-    await Promise.all(apps)
-    console.log('All 20 cards initialized')
+    console.log('All 20 cards ready (hover to interact)')
 }
 
 initGrid().catch(console.error)
