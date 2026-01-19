@@ -16,6 +16,12 @@ void main() {
     // Additive bloom
     vec3 finalColor = scene.rgb + bloomColor * u_bloomIntensity;
 
-    // Preserve scene alpha for transparency
-    fragColor = vec4(finalColor, scene.a);
+    // Bloom contributes to alpha so glow extends beyond card edges
+    // Card pixels: scene.a = 1.0 (opaque)
+    // Background with bloom: scene.a = 0 but bloom makes it visible
+    // Background without bloom: stays transparent
+    float bloomBrightness = dot(bloomColor, vec3(0.299, 0.587, 0.114)) * u_bloomIntensity;
+    float finalAlpha = max(scene.a, clamp(bloomBrightness, 0.0, 1.0));
+
+    fragColor = vec4(finalColor, finalAlpha);
 }

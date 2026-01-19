@@ -177,6 +177,9 @@ class CardShaderApp {
             isBaseShader: this.shaderManager.getActiveName() === 'base'
         }
 
+        // Reduce bloom intensity when no mask is active (full card effect)
+        this.bloomPass.intensity = this.maskActive ? 1.2 : 0.2;
+
         if (this.bloomPass.enabled) {
             // Bloom enabled: card → bloomPass → effectsPass → screen
             this.bloomPass.beginSceneRender()
