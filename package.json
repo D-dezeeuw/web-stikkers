@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "serve -p 8080",
+    "build:shaders": "node scripts/build-shaders.js",
+    "dev": "npm run build:shaders && serve -p 8080",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",

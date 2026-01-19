@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stikker Web Component Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #8b8b9a;
+        }
+
+        h2 {
+            margin: 2rem 0 1rem;
+            font-size: 1.25rem;
+            color: #a0a0b0;
+        }
+
+        /* Demo sections */
+        .demo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Single card demo */
+        .single-card {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        .card-container {
+            width: 200px;
+            height: 320px;
+        }
+
+        .controls {
+            flex: 1;
+        }
+
+        .control-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+            color: #a0a0b0;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #3a3a5a;
+            border-radius: 6px;
+            background: #1a1a2e;
+            color: #fff;
+            font-size: 0.875rem;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        /* Checkbox group */
+        .checkbox-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Grid demo */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .card-grid stikker {
+            width: 100%;
+        }
+
+        /* Code example */
+        pre {
+            background: #0d0d1a;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        code {
+            color: #a5d6ff;
+        }
+
+        .code-comment {
+            color: #6e7681;
+        }
+
+        .code-string {
+            color: #a5d6ff;
+        }
+
+        .code-tag {
+            color: #7ee787;
+        }
+
+        .code-attr {
+            color: #79c0ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>&lt;stikker-card&gt;</h1>
+    <p class="subtitle">WebGL Card Shader Web Component</p>
+
+    <!-- Demo 1: Interactive single card -->
+    <div class="demo-section">
+        <h2>Interactive Demo</h2>
+        <div class="single-card">
+            <div class="card-container">
+                <stikker-card
+                    id="demo-card"
+                    shader="holographic"
+                    card-src="zelda"
+                    card-name="Link"
+                    card-number="001/100"
+                    mask="normal"
+                    interactive
+                ></stikker-card>
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="shader-select">Shader Effect</label>
+                    <select id="shader-select">
+                        <option value="holographic" selected>Holographic</option>
+                        <option value="foil">Foil</option>
+                        <option value="parallax">Parallax</option>
+                        <option value="galaxy">Galaxy</option>
+                        <option value="cracked-ice">Cracked Ice</option>
+                        <option value="refractor">Refractor</option>
+                        <option value="starburst">Starburst</option>
+                        <option value="prizm">Prizm</option>
+                        <option value="etched">Etched</option>
+                        <option value="base">Base (no effect)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="card-src-select">Card Source</label>
+                    <select id="card-src-select">
+                        <option value="zelda" selected>Zelda</option>
+                        <option value="random-emoji">Random Emoji</option>
+                        <option value="random-geometric">Random Geometric</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="mask-select">Effect Mask</label>
+                    <select id="mask-select">
+                        <option value="full">Full</option>
+                        <option value="border">Border</option>
+                        <option value="center">Center</option>
+                        <option value="art-window">Art Window</option>
+                        <option value="radial-edge">Radial Edge</option>
+                        <option value="radial-center">Radial Center</option>
+                        <option value="normal" selected>Normal Map</option>
+                        <option value="brightness">Texture Brightness</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="card-name">Card Name</label>
+                    <input type="text" id="card-name" value="Link">
+                </div>
+
+                <div class="control-group">
+                    <label for="card-number">Card Number</label>
+                    <input type="text" id="card-number" value="001/100">
+                </div>
+
+                <div class="control-group">
+                    <label>Effect Options</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="hdr-toggle">
+                            HDR
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="saturation-toggle">
+                            Saturation
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Demo 2: Lazy loading grid -->
+    <div class="demo-section">
+        <h2>Lazy Loading Grid (hover to activate)</h2>
+        <div class="card-grid" id="lazy-grid">
+            <!-- Cards will be added via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Demo 3: Code example -->
+    <div class="demo-section">
+        <h2>Usage</h2>
+        <pre><code><span class="code-comment">&lt;!-- Import the library --&gt;</span>
+<span class="code-tag">&lt;script</span> <span class="code-attr">type</span>=<span class="code-string">"module"</span><span class="code-tag">&gt;</span>
+  import { registerStikkerElement } from './src/index.js'
+  registerStikkerElement()
+<span class="code-tag">&lt;/script&gt;</span>
+
+<span class="code-comment">&lt;!-- Use the web component --&gt;</span>
+<span class="code-tag">&lt;stikker</span>
+  <span class="code-attr">shader</span>=<span class="code-string">"holographic"</span>
+  <span class="code-attr">card-src</span>=<span class="code-string">"zelda"</span>
+  <span class="code-attr">card-name</span>=<span class="code-string">"Link"</span>
+  <span class="code-attr">card-number</span>=<span class="code-string">"001/100"</span>
+  <span class="code-attr">interactive</span>
+<span class="code-tag">&gt;&lt;/stikker&gt;</span>
+
+<span class="code-comment">&lt;!-- Lazy loading (for many cards) --&gt;</span>
+<span class="code-tag">&lt;stikker</span> <span class="code-attr">lazy</span> <span class="code-attr">shader</span>=<span class="code-string">"foil"</span> <span class="code-attr">card-src</span>=<span class="code-string">"random-emoji"</span><span class="code-tag">&gt;&lt;/stikker&gt;</span>
+</code></pre>
+    </div>
+
+    <script type="module">
+        import { Stikker, registerStikkerElement } from './src/index.js'
+
+        // Register the web component
+        registerStikkerElement()
+
+        // Wait for DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            const demoCard = document.getElementById('demo-card')
+
+            // Shader select
+            document.getElementById('shader-select').addEventListener('change', (e) => {
+                demoCard.setAttribute('shader', e.target.value)
+            })
+
+            // Card source select
+            document.getElementById('card-src-select').addEventListener('change', (e) => {
+                demoCard.setAttribute('card-src', e.target.value)
+            })
+
+            // Mask select
+            document.getElementById('mask-select').addEventListener('change', (e) => {
+                demoCard.setAttribute('mask', e.target.value)
+            })
+
+            // Card name input
+            document.getElementById('card-name').addEventListener('input', (e) => {
+                demoCard.setAttribute('card-name', e.target.value)
+            })
+
+            // Card number input
+            document.getElementById('card-number').addEventListener('input', (e) => {
+                demoCard.setAttribute('card-number', e.target.value)
+            })
+
+            // HDR toggle
+            document.getElementById('hdr-toggle').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    demoCard.setAttribute('hdr', '')
+                } else {
+                    demoCard.removeAttribute('hdr')
+                }
+            })
+
+            // Saturation toggle
+            document.getElementById('saturation-toggle').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    demoCard.setAttribute('saturation', '')
+                } else {
+                    demoCard.removeAttribute('saturation')
+                }
+            })
+
+            // Create lazy loading grid
+            const grid = document.getElementById('lazy-grid')
+            const shaders = Stikker.shaderNames
+            const sources = ['zelda', 'random-emoji', 'random-geometric']
+
+            for (let i = 0; i < 12; i++) {
+                const stikker = document.createElement('stikker')
+                stikker.setAttribute('lazy', '')
+                stikker.setAttribute('shader', shaders[i % shaders.length])
+                stikker.setAttribute('card-src', sources[i % sources.length])
+                stikker.setAttribute('card-number', `${String(i + 1).padStart(3, '0')}/012`)
+                stikker.setAttribute('interactive', '')
+                grid.appendChild(stikker)
+            }
+        })
+    </script>
+</body>
+</html>

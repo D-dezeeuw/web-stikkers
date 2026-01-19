@@ -47,6 +47,13 @@ export class ShaderProgram {
         const gl = this.gl
         const shader = gl.createShader(type)
 
+        // Check if shader creation failed (context lost)
+        if (!shader) {
+            const typeName = type === gl.VERTEX_SHADER ? 'vertex' : 'fragment'
+            const isLost = gl.isContextLost ? gl.isContextLost() : 'unknown'
+            throw new Error(`Failed to create ${typeName} shader (context lost: ${isLost})`)
+        }
+
         gl.shaderSource(shader, source)
         gl.compileShader(shader)
 

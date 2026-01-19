@@ -13,39 +13,23 @@
         }
         html, body {
             background: #1a1a2e;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-y: auto;
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-template-rows: repeat(4, 1fr);
+            grid-template-columns: repeat(10, 1fr);
             gap: 10px;
-            height: 100vh;
+            width: 100vw;
             padding: 10px;
+            box-sizing: border-box;
         }
         .card-cell {
             position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             cursor: pointer;
         }
-        .card-cell .card-wrapper {
-            position: relative;
-            height: 100%;
-            aspect-ratio: 5/8;
-            max-width: 100%;
-        }
-        .card-cell canvas,
-        .card-cell img {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .card-cell stikker-card {
             width: 100%;
-            height: 100%;
-            display: block;
-            object-fit: contain;
         }
 
         /* Overlay styles */
@@ -70,43 +54,24 @@
             height: 90vh;
             aspect-ratio: 5/8;
         }
-        .overlay-card canvas {
+        .overlay-card stikker-card {
             width: 100%;
             height: 100%;
-            display: block;
         }
     </style>
 </head>
 <body>
     <!-- Overlay for expanded card view -->
     <div class="overlay" id="overlay">
-        <div class="overlay-card">
-            <canvas id="overlay-canvas"></canvas>
+        <div class="overlay-card" id="overlay-card">
+            <!-- Stikker element will be created dynamically -->
         </div>
     </div>
 
-    <div class="grid">
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-0"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-1"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-2"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-3"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-4"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-5"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-6"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-7"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-8"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-9"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-10"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-11"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-12"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-13"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-14"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-15"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-16"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-17"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-18"></canvas></div></div>
-        <div class="card-cell"><div class="card-wrapper"><canvas id="card-19"></canvas></div></div>
+    <div class="grid" id="grid">
+        <!-- Stikker elements will be created dynamically -->
     </div>
+
     <script type="module" src="src/test-grid.js"></script>
 </body>
 </html>

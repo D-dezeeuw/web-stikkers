@@ -12,6 +12,7 @@ import { EffectsPass } from './post/EffectsPass.js'
 import { UIController } from './ui/UIController.js'
 import { TextRenderer } from './factories/TextRenderer.js'
 import { CardFactory } from './factories/CardFactory.js'
+import { RandomTextureFactory } from './factories/RandomTextureFactory.js'
 
 class CardShaderApp {
     constructor() {
@@ -88,6 +89,21 @@ class CardShaderApp {
         // Load card textures using factory
         this.cardFactory = new CardFactory(this.gl)
         this.cards = await this.cardFactory.loadCardTextures()
+
+        // Create random texture cards
+        this.randomFactory = new RandomTextureFactory(this.gl)
+        const emojiCard = this.randomFactory.createRandomCard({ type: 'emoji' })
+        this.cards['random-emoji'] = {
+            texture: emojiCard.texture,
+            normalMap: null,
+            brightnessMask: emojiCard.brightnessMask
+        }
+        const geometricCard = this.randomFactory.createRandomCard({ type: 'geometric' })
+        this.cards['random-geometric'] = {
+            texture: geometricCard.texture,
+            normalMap: null,
+            brightnessMask: geometricCard.brightnessMask
+        }
 
         // Initialize text renderer
         this.textRenderer = new TextRenderer(this.gl)

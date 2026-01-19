@@ -2,14 +2,56 @@ import { ShaderProgram } from '../core/ShaderProgram.js'
 import { loadShaderSource } from '../utils/ShaderLoader.js'
 
 export class ShaderManager {
-    constructor(gl) {
+    constructor(gl, options = {}) {
         this.gl = gl
         this.shaders = new Map()
         this.activeShader = null
         this.activeShaderName = null
+        this.useBundled = options.useBundled ?? false
+        this.shaderRegistry = options.shaderRegistry ?? null
     }
 
+    /**
+     * Load shader from bundled registry (no network requests)
+     */
+    loadShaderFromRegistry(name) {
+        if (!this.shaderRegistry) {
+            throw new Error('Shader registry not provided')
+        }
+
+        const { getShaderPair, BASE_VERTEX } = this.shaderRegistry
+        const { vertex, fragment } = getShaderPair(name)
+
+        const program = new ShaderProgram(this.gl, vertex, fragment)
+        this.shaders.set(name, program)
+
+        return program
+    }
+
+    /**
+     * Load all card shaders from bundled registry
+     */
+    loadAllFromRegistry() {
+        if (!this.shaderRegistry) {
+            throw new Error('Shader registry not provided')
+        }
+
+        const { SHADER_NAMES } = this.shaderRegistry
+        for (const name of SHADER_NAMES) {
+            this.loadShaderFromRegistry(name)
+        }
+    }
+
+    /**
+     * Load shader from file paths (original fetch-based method)
+     */
     async loadShader(name, vertexPath, fragmentPath) {
+        // If using bundled mode and registry is available, use it
+        if (this.useBundled && this.shaderRegistry) {
+            return this.loadShaderFromRegistry(name)
+        }
+
+        // Otherwise fetch from files
         const [vertexSource, fragmentSource] = await Promise.all([
             loadShaderSource(vertexPath),
             loadShaderSource(fragmentPath)
