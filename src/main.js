@@ -8,19 +8,17 @@ import { Card } from './card/Card.js'
 import { CardController } from './card/CardController.js'
 import { CardRenderer } from './card/CardRenderer.js'
 import { BloomPass } from './post/BloomPass.js'
-import { EffectsPass } from './post/EffectsPass.js'
 import { UIController } from './ui/UIController.js'
 import { TextRenderer } from './factories/TextRenderer.js'
-import { CardFactory } from './factories/CardFactory.js'
 import { RandomTextureFactory } from './factories/RandomTextureFactory.js'
+import { Texture } from './core/Texture.js'
+import { createTextureBrightnessMask } from './core/MaskFactory.js'
 
 class CardShaderApp {
     constructor() {
         this.canvas = document.getElementById('card-canvas')
 
         // Effect settings
-        this.hdrEnabled = false
-        this.saturationBoostEnabled = false
         this.showMask = false
         this.maskActive = true
         this.cardText = ''
@@ -34,10 +32,8 @@ class CardShaderApp {
         this.controller = null
         this.renderer = null
         this.bloomPass = null
-        this.effectsPass = null
         this.uiController = null
         this.textRenderer = null
-        this.cardFactory = null
         this.cards = {}
         this.effectMasks = {}
 
@@ -86,9 +82,17 @@ class CardShaderApp {
         }
         this.card.setTexture('effectMask', this.effectMasks['full'])
 
-        // Load card textures using factory
-        this.cardFactory = new CardFactory(this.gl)
-        this.cards = await this.cardFactory.loadCardTextures()
+        // Load zelda card textures directly
+        const zeldaVisual = new Texture(this.gl)
+        await zeldaVisual.load('src/textures/zelda/visual.png')
+        const zeldaNormal = new Texture(this.gl)
+        await zeldaNormal.load('src/textures/zelda/normal.png')
+        const zeldaBrightness = await this._createBrightnessMaskFromImage('src/textures/zelda/visual.png')
+        this.cards['zelda'] = {
+            texture: zeldaVisual,
+            normalMap: zeldaNormal,
+            brightnessMask: zeldaBrightness
+        }
 
         // Create random texture cards
         this.randomFactory = new RandomTextureFactory(this.gl)
@@ -115,17 +119,12 @@ class CardShaderApp {
         this.controller = new CardController(this.card, this.canvas)
         this.renderer = new CardRenderer(this.gl, this.geometry, this.shaderManager)
 
-        // Create effects pass (HDR, saturation, number overlay)
-        this.effectsPass = new EffectsPass(this.gl)
-        await this.effectsPass.loadShader()
-        this.effectsPass.resize(this.canvas.width, this.canvas.height)
-
         // Create bloom pass
         this.bloomPass = new BloomPass(this.gl)
         await this.bloomPass.loadShaders()
         this.bloomPass.resize(this.canvas.width, this.canvas.height)
-        // Bloom outputs to effects pass framebuffer
-        this.bloomPass.setOutputFBO(this.effectsPass.sceneFBO.fbo)
+        // Bloom outputs directly to screen (null = default framebuffer)
+        this.bloomPass.setOutputFBO(null)
         this.bloomPass.enabled = true  // Enable bloom by default
 
         // Set initial shader and mask
@@ -186,8 +185,6 @@ class CardShaderApp {
         this.card.update(deltaTime)
 
         const effectSettings = {
-            hdrEnabled: this.hdrEnabled,
-            saturationBoostEnabled: this.saturationBoostEnabled,
             showMask: this.showMask,
             maskActive: this.maskActive,
             isBaseShader: this.shaderManager.getActiveName() === 'base'
@@ -197,30 +194,16 @@ class CardShaderApp {
         this.bloomPass.intensity = this.maskActive ? 1.2 : 0.2;
 
         if (this.bloomPass.enabled) {
-            // Bloom enabled: card → bloomPass → effectsPass → screen
+            // Bloom enabled: card → bloomPass → screen
             this.bloomPass.beginSceneRender()
             this.context.clear()
             this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
             this.bloomPass.endSceneRender()
-            this.bloomPass.renderBloom()  // Outputs to effectsPass.sceneFBO
-
-            // Apply effects and render to screen
-            this.effectsPass.render(
-                this.effectsPass.getSceneTexture(),
-                effectSettings
-            )
+            this.bloomPass.renderBloom()  // Outputs directly to screen
         } else {
-            // No bloom: card → effectsPass → screen
-            this.effectsPass.beginSceneRender()
+            // No bloom: card → screen (direct render)
             this.context.clear()
             this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
-            this.effectsPass.endSceneRender()
-
-            // Apply effects and render to screen
-            this.effectsPass.render(
-                this.effectsPass.getSceneTexture(),
-                effectSettings
-            )
         }
 
         requestAnimationFrame(() => this.render())
@@ -232,8 +215,28 @@ class CardShaderApp {
         this.shaderManager?.destroy()
         this.geometry?.destroy()
         this.bloomPass?.destroy()
-        this.effectsPass?.destroy()
         this.textRenderer?.destroy()
+    }
+
+    /**
+     * Create brightness mask from image URL
+     * @param {string} url - Image URL
+     * @returns {Promise<Texture>}
+     */
+    _createBrightnessMaskFromImage(url) {
+        return new Promise((resolve) => {
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            img.onload = () => {
+                const canvas = document.createElement('canvas')
+                canvas.width = img.width
+                canvas.height = img.height
+                const ctx = canvas.getContext('2d')
+                ctx.drawImage(img, 0, 0)
+                resolve(createTextureBrightnessMask(this.gl, canvas))
+            }
+            img.src = url
+        })
     }
 }
 

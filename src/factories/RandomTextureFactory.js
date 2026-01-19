@@ -17,7 +17,7 @@ export class RandomTextureFactory {
      * @param {string} options.emoji - Force specific emoji (optional)
      * @param {string} options.geometricType - Force specific geometric type (optional)
      * @param {string[]} options.palette - Force specific color palette (optional)
-     * @returns {{ texture: Texture, canvas: HTMLCanvasElement, brightnessMask: Texture }}
+     * @returns {{ texture: Texture, canvas: HTMLCanvasElement, brightnessMask: Texture, generatedName: string }}
      */
     createRandomCard(options = {}) {
         const {
@@ -52,10 +52,11 @@ export class RandomTextureFactory {
             ? (Math.random() > 0.5 ? 'emoji' : 'geometric')
             : type
 
+        let generatedName = ''
         if (actualType === 'emoji') {
-            this._drawEmoji(ctx, width, height, scale, emoji)
+            generatedName = this._drawEmoji(ctx, width, height, scale, emoji)
         } else {
-            this._drawGeometric(ctx, width, height, scale, geometricType, palette)
+            generatedName = this._drawGeometric(ctx, width, height, scale, geometricType, palette)
         }
 
         // Create texture from canvas
@@ -65,7 +66,7 @@ export class RandomTextureFactory {
         // Create brightness mask for effects
         const brightnessMask = createTextureBrightnessMask(this.gl, canvas)
 
-        return { texture, canvas, brightnessMask }
+        return { texture, canvas, brightnessMask, generatedName }
     }
 
     /**
@@ -158,11 +159,18 @@ export class RandomTextureFactory {
     _drawEmoji(ctx, width, height, scale, forcedEmoji = null) {
         // Handle both string emoji and object { emoji, name }
         let emojiChar = forcedEmoji
+        let emojiName = ''
         if (!emojiChar) {
             const picked = this._pickRandom(COMMON_EMOJIS)
             emojiChar = picked.emoji || picked
+            emojiName = picked.name || ''
         } else if (typeof emojiChar === 'object') {
+            emojiName = emojiChar.name || ''
             emojiChar = emojiChar.emoji
+        } else if (typeof emojiChar === 'string') {
+            // Try to find the name from COMMON_EMOJIS
+            const found = COMMON_EMOJIS.find(e => e.emoji === emojiChar)
+            emojiName = found ? found.name : ''
         }
 
         // Draw emoji large in center
@@ -183,6 +191,8 @@ export class RandomTextureFactory {
         ctx.fillText(emojiChar, centerX, centerY)
         ctx.shadowColor = 'transparent'
         ctx.shadowBlur = 0
+
+        return emojiName
     }
 
     _drawGeometric(ctx, width, height, scale, forcedType = null, forcedPalette = null) {
@@ -222,6 +232,9 @@ export class RandomTextureFactory {
         }
 
         ctx.restore()
+
+        // Return capitalized type name
+        return type.charAt(0).toUpperCase() + type.slice(1)
     }
 
     _drawCircles(ctx, cx, cy, scale, palette) {

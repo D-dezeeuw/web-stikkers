@@ -1,5 +1,5 @@
 /**
- * Stikker - Core class for rendering shader cards
+ * sticker - Core class for rendering shader cards
  *
  * Provides a clean options-based API that maps to internal WebGL components.
  * Supports lazy initialization for displaying many cards efficiently.
@@ -16,7 +16,6 @@ import {
 import { Card } from '../card/Card.js'
 import { CardController } from '../card/CardController.js'
 import { CardRenderer } from '../card/CardRenderer.js'
-import { CardFactory } from '../factories/CardFactory.js'
 import { RandomTextureFactory } from '../factories/RandomTextureFactory.js'
 import { TextRenderer } from '../factories/TextRenderer.js'
 import { TextureLoader } from './TextureLoader.js'
@@ -33,16 +32,17 @@ const MASK_FACTORIES = {
     'radial-center': createRadialCenterMask
 }
 
-// Built-in card sources
-const BUILTIN_SOURCES = ['zelda', 'random-emoji', 'random-geometric']
+// Built-in card sources (procedural generators only)
+const BUILTIN_SOURCES = ['random-emoji', 'random-geometric']
 
 /**
- * Default options for Stikker
+ * Default options for sticker
  */
 const DEFAULT_OPTIONS = {
     // Core
     shader: 'holographic',
     cardSrc: null,
+    cardNormal: null,
 
     // Text overlays
     cardName: '',
@@ -51,8 +51,6 @@ const DEFAULT_OPTIONS = {
     // Effects
     mask: 'full',
     bloom: false,
-    hdr: false,
-    saturation: false,
 
     // Behavior
     interactive: true,
@@ -60,9 +58,9 @@ const DEFAULT_OPTIONS = {
     autoplay: true
 }
 
-export class Stikker {
+export class sticker {
     /**
-     * Create a new Stikker instance
+     * Create a new sticker instance
      * @param {HTMLCanvasElement} canvas - Canvas element to render to
      * @param {Object} options - Configuration options
      */
@@ -77,6 +75,10 @@ export class Stikker {
         this.isReady = false
         this.lastTime = 0
         this.frameId = null
+
+        // Callbacks (set by stickerElement to dispatch events)
+        this.onError = null
+        this.onSourceLoaded = null
 
         // Pool integration - borrowed context contains shared GL resources
         this._borrowedContext = null
@@ -101,8 +103,10 @@ export class Stikker {
         // Internal cache for generated content (random-emoji, random-geometric)
         // These persist across destroy/init cycles to maintain consistent visuals
         this._cachedBaseImageUrl = null
+        this._cachedSourceType = null
         this._cachedMaskImageUrl = null
         this._isGeneratedContent = false
+        this._generatedName = null
 
         // Static image for lazy mode
         this.staticImage = null
@@ -191,6 +195,9 @@ export class Stikker {
             // Load card texture (card-specific)
             await this.loadCardSource(this.options.cardSrc)
 
+            // Notify that source has loaded (for generated name etc)
+            this.onSourceLoaded?.()
+
             // Check again after async load
             if (!this.isActive && this.options.lazy) {
                 this.cleanupPartialInit()
@@ -217,7 +224,7 @@ export class Stikker {
 
             this.isReady = true
         } catch (err) {
-            console.error('Stikker init failed:', err)
+            console.error('sticker init failed:', err)
             this.cleanupPartialInit()
             throw err
         } finally {
@@ -235,39 +242,79 @@ export class Stikker {
             return
         }
 
-        if (source === 'zelda') {
-            // Built-in Zelda card
-            this.cardFactory = new CardFactory(this.gl)
-            const cards = await this.cardFactory.loadCardTextures()
-            const cardData = cards.zelda
-            this.card.setTexture('base', cardData.texture)
-            // Store masks for later use
-            this.storedNormalMap = cardData.normalMap
-            this.storedBrightnessMask = cardData.brightnessMask
-            // Default to normal map if available
-            this.card.setTexture('effectMask', cardData.normalMap || cardData.brightnessMask)
-        } else if (source.startsWith('random-emoji') || source === 'random-geometric') {
-            // Check if we have cached content
-            if (this._cachedBaseImageUrl) {
+        // Procedural generators
+        if (source.startsWith('random-emoji') || source === 'random-geometric') {
+            const sourceType = source.startsWith('random-emoji') ? 'random-emoji' : 'random-geometric'
+
+            // Check if we have cached content OF THE SAME TYPE
+            if (this._cachedBaseImageUrl && this._cachedSourceType === sourceType) {
                 // Load from cache - same visual content as before
                 await this._loadFromCache()
             } else {
+                // Clear old cache if switching types
+                this._cachedBaseImageUrl = null
+                this._cachedSourceType = null
+
                 // Parse optional emoji from source (format: "random-emoji:😀")
                 let emoji = null
                 if (source.startsWith('random-emoji:')) {
                     emoji = source.substring('random-emoji:'.length)
                 }
                 // Generate new random content and cache it
-                await this._generateAndCacheRandomContent(source.startsWith('random-emoji') ? 'random-emoji' : source, emoji)
+                await this._generateAndCacheRandomContent(sourceType, emoji)
+                this._cachedSourceType = sourceType
             }
-        } else {
-            // URL - load custom image
-            const texture = await this.textureLoader.load(source)
-            this.card.setTexture('base', texture)
-            // No stored masks for custom images
-            this.storedNormalMap = null
-            this.storedBrightnessMask = null
+            return
         }
+
+        // URL-based loading
+        const texture = await this.textureLoader.load(source)
+        this.card.setTexture('base', texture)
+
+        // Load normal map if provided, otherwise generate brightness mask
+        if (this.options.cardNormal) {
+            const normalMap = await this.textureLoader.load(this.options.cardNormal)
+            this.storedNormalMap = normalMap
+            this.storedBrightnessMask = null
+            this.card.setTexture('effectMask', normalMap)
+        } else {
+            const brightnessMask = await this._createBrightnessMaskFromUrl(source)
+            this.storedNormalMap = null
+            this.storedBrightnessMask = brightnessMask
+            this.card.setTexture('effectMask', brightnessMask)
+        }
+    }
+
+    /**
+     * Create brightness mask from image URL
+     * @param {string} url - Image URL
+     * @returns {Promise<Texture>}
+     */
+    async _createBrightnessMaskFromUrl(url) {
+        const img = await this._loadImage(url)
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+
+        const { createTextureBrightnessMask } = await import('../core/MaskFactory.js')
+        return createTextureBrightnessMask(this.gl, canvas)
+    }
+
+    /**
+     * Load an image from URL
+     * @param {string} url - Image URL
+     * @returns {Promise<HTMLImageElement>}
+     */
+    _loadImage(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image()
+            img.crossOrigin = 'anonymous'
+            img.onload = () => resolve(img)
+            img.onerror = reject
+            img.src = url
+        })
     }
 
     /**
@@ -288,6 +335,12 @@ export class Stikker {
         // Cache the generated content for reuse
         this._isGeneratedContent = true
         this._cachedBaseImageUrl = cardData.canvas.toDataURL('image/png')
+        this._generatedName = cardData.generatedName || ''
+
+        // Auto-set card name if not already set
+        if (this._generatedName && !this.options.cardName) {
+            this.setCardName(this._generatedName)
+        }
     }
 
     /**
@@ -298,39 +351,24 @@ export class Stikker {
         const texture = await this.textureLoader.load(this._cachedBaseImageUrl)
         this.card.setTexture('base', texture)
 
-        // Recreate brightness mask from the loaded image
-        // We need to draw the image to a canvas first
-        const img = new Image()
-        await new Promise((resolve, reject) => {
-            img.onload = resolve
-            img.onerror = reject
-            img.src = this._cachedBaseImageUrl
-        })
-
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0)
-
-        // Import createTextureBrightnessMask dynamically to avoid circular deps
-        const { createTextureBrightnessMask } = await import('../core/MaskFactory.js')
-        const brightnessMask = createTextureBrightnessMask(this.gl, canvas)
-
+        // Recreate brightness mask from the cached image
+        const brightnessMask = await this._createBrightnessMaskFromUrl(this._cachedBaseImageUrl)
         this.storedNormalMap = null
         this.storedBrightnessMask = brightnessMask
         this.card.setTexture('effectMask', brightnessMask)
     }
 
     /**
-     * Copy cached content from another Stikker instance (internal use)
+     * Copy cached content from another sticker instance (internal use)
      * Used for cross-element content transfer (e.g., grid card → overlay)
-     * @param {Stikker} source - Source Stikker to copy from
+     * @param {sticker} source - Source sticker to copy from
      */
     _copyContentFrom(source) {
         if (source && source._cachedBaseImageUrl) {
             this._cachedBaseImageUrl = source._cachedBaseImageUrl
+            this._cachedSourceType = source._cachedSourceType
             this._isGeneratedContent = source._isGeneratedContent
+            this._generatedName = source._generatedName
         }
     }
 
@@ -339,6 +377,13 @@ export class Stikker {
      */
     get _hasGeneratedContent() {
         return this._isGeneratedContent && this._cachedBaseImageUrl !== null
+    }
+
+    /**
+     * Get the generated name (for random-emoji or random-geometric content)
+     */
+    get generatedName() {
+        return this._generatedName
     }
 
     /**
@@ -431,7 +476,9 @@ export class Stikker {
             await this.init()
 
             // Single frame render - textures are ready after init()
+            this._isStaticRender = true
             this.renderFrame(0.016)
+            this._isStaticRender = false
 
             // Capture snapshot (only capture point - not re-captured on deactivate)
             this.captureSnapshot()
@@ -479,7 +526,7 @@ export class Stikker {
             this.showCanvas()
             this.start()
         } catch (err) {
-            console.error('Failed to activate Stikker:', err)
+            console.error('Failed to activate sticker:', err)
             this.isActive = false
         }
     }
@@ -544,11 +591,10 @@ export class Stikker {
         this.controller?.update(deltaTime)
 
         const effectSettings = {
-            hdrEnabled: this.options.hdr,
-            saturationBoostEnabled: this.options.saturation,
             showMask: false,
             maskActive: this.options.mask !== 'full',
-            isBaseShader: this.options.shader === 'base'
+            isBaseShader: this.options.shader === 'base',
+            textOpacity: this._isStaticRender ? 1.0 : 0.2
         }
 
         // Render to the offscreen canvas (from pool)
@@ -690,7 +736,31 @@ export class Stikker {
         if (this.options.cardSrc === source) return  // Skip if unchanged
         this.options.cardSrc = source
         if (this.gl && this.card) {
-            await this.loadCardSource(source)
+            try {
+                await this.loadCardSource(source)
+                this.onSourceLoaded?.()
+            } catch (err) {
+                console.error('Failed to load card source:', err)
+                this.onError?.(err)
+            }
+        }
+    }
+
+    /**
+     * Set the normal map source
+     * @param {string} source - URL to normal map image
+     */
+    async setCardNormal(source) {
+        if (this.options.cardNormal === source) return  // Skip if unchanged
+        this.options.cardNormal = source
+        // Reload card source to apply new normal map
+        if (this.gl && this.card && this.options.cardSrc) {
+            try {
+                await this.loadCardSource(this.options.cardSrc)
+            } catch (err) {
+                console.error('Failed to load card normal:', err)
+                this.onError?.(err)
+            }
         }
     }
 
@@ -739,6 +809,9 @@ export class Stikker {
                 case 'cardSrc':
                     this.setCardSrc(value)
                     break
+                case 'cardNormal':
+                    this.setCardNormal(value)
+                    break
                 case 'cardName':
                     this.setCardName(value)
                     break
@@ -749,8 +822,6 @@ export class Stikker {
                     this.setMask(value)
                     break
                 case 'bloom':
-                case 'hdr':
-                case 'saturation':
                 case 'interactive':
                 case 'lazy':
                 case 'autoplay':

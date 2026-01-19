@@ -1,17 +1,17 @@
 /**
- * Test Grid - Demonstrates <stikker-card> web component in a grid layout
+ * Test Grid - Demonstrates <sticker-card> web component in a grid layout
  *
  * Uses the lazy loading feature to efficiently display many cards.
  */
 
-import { Stikker, registerStikkerElement } from './index.js'
+import { sticker, registerstickerElement } from './index.js'
 import { COMMON_EMOJIS } from './data/emojis.js'
 
 // Register the web component
-registerStikkerElement()
+registerstickerElement()
 
 // Shader list (cycles through for variety)
-const SHADERS = Stikker.shaderNames
+const SHADERS = sticker.shaderNames
 
 // Helper to pick random item from array
 function pickRandom(array) {
@@ -25,7 +25,7 @@ class OverlayManager {
     constructor() {
         this.overlay = document.getElementById('overlay')
         this.overlayCard = document.getElementById('overlay-card')
-        this.currentStikker = null
+        this.currentsticker = null
         this.isOpen = false
 
         // Close on overlay click (but not on card click)
@@ -39,7 +39,7 @@ class OverlayManager {
     /**
      * Open overlay with a copy of the card
      * @param {Object} cardConfig - Card configuration
-     * @param {StikkerElement} sourceElement - Source element to copy content from
+     * @param {stickerElement} sourceElement - Source element to copy content from
      */
     open(cardConfig, sourceElement) {
         if (this.isOpen) return
@@ -48,26 +48,26 @@ class OverlayManager {
         // Show overlay
         this.overlay.classList.add('active')
 
-        // Create stikker element for overlay (not lazy, autoplay)
-        const stikker = document.createElement('stikker-card')
-        stikker.setAttribute('shader', cardConfig.shader)
-        stikker.setAttribute('card-src', cardConfig.cardSrc)
-        stikker.setAttribute('card-number', cardConfig.cardNumber)
+        // Create sticker element for overlay (not lazy, autoplay)
+        const sticker = document.createElement('sticker-card')
+        sticker.setAttribute('shader', cardConfig.shader)
+        sticker.setAttribute('card-src', cardConfig.cardSrc)
+        sticker.setAttribute('card-number', cardConfig.cardNumber)
         if (cardConfig.cardName) {
-            stikker.setAttribute('card-name', cardConfig.cardName)
+            sticker.setAttribute('card-name', cardConfig.cardName)
         }
-        stikker.setAttribute('interactive', '')
+        sticker.setAttribute('interactive', '')
 
         // Clear and add to overlay
         this.overlayCard.innerHTML = ''
-        this.overlayCard.appendChild(stikker)
-        this.currentStikker = stikker
+        this.overlayCard.appendChild(sticker)
+        this.currentsticker = sticker
 
         // Copy cached content from source element (for random-emoji/random-geometric)
-        // This is done AFTER adding to DOM so stikker instance exists,
-        // but BEFORE init completes (due to requestAnimationFrame delay in _initStikker)
+        // This is done AFTER adding to DOM so sticker instance exists,
+        // but BEFORE init completes (due to requestAnimationFrame delay in _initsticker)
         if (sourceElement) {
-            stikker.copyContentFrom(sourceElement)
+            sticker.copyContentFrom(sourceElement)
         }
     }
 
@@ -81,10 +81,10 @@ class OverlayManager {
         // Hide overlay
         this.overlay.classList.remove('active')
 
-        // Remove stikker element
-        if (this.currentStikker) {
-            this.currentStikker.remove()
-            this.currentStikker = null
+        // Remove sticker element
+        if (this.currentsticker) {
+            this.currentsticker.remove()
+            this.currentsticker = null
         }
     }
 }
@@ -111,19 +111,19 @@ function createCardConfig(index, totalCards) {
 }
 
 /**
- * Create a stikker element with the given configuration
+ * Create a sticker element with the given configuration
  */
-function createStikkerElement(config) {
-    const stikker = document.createElement('stikker-card')
-    stikker.setAttribute('lazy', '')
-    stikker.setAttribute('shader', config.shader)
-    stikker.setAttribute('card-src', config.cardSrc)
-    stikker.setAttribute('card-number', config.cardNumber)
+function createstickerElement(config) {
+    const sticker = document.createElement('sticker-card')
+    sticker.setAttribute('lazy', '')
+    sticker.setAttribute('shader', config.shader)
+    sticker.setAttribute('card-src', config.cardSrc)
+    sticker.setAttribute('card-number', config.cardNumber)
     if (config.cardName) {
-        stikker.setAttribute('card-name', config.cardName)
+        sticker.setAttribute('card-name', config.cardName)
     }
-    stikker.setAttribute('interactive', '')
-    return stikker
+    sticker.setAttribute('interactive', '')
+    return sticker
 }
 
 /**
@@ -134,7 +134,7 @@ function initGrid() {
     const overlayManager = new OverlayManager()
     const totalCards = 380
 
-    // Create all card cells with stikker elements
+    // Create all card cells with sticker elements
     for (let i = 0; i < totalCards; i++) {
         const config = createCardConfig(i, totalCards)
 
@@ -142,13 +142,13 @@ function initGrid() {
         const cell = document.createElement('div')
         cell.className = 'card-cell'
 
-        // Create stikker element
-        const stikker = createStikkerElement(config)
-        cell.appendChild(stikker)
+        // Create sticker element
+        const sticker = createstickerElement(config)
+        cell.appendChild(sticker)
 
         // Add click handler to open overlay
         cell.addEventListener('click', () => {
-            overlayManager.open(config, stikker)
+            overlayManager.open(config, sticker)
         })
 
         grid.appendChild(cell)

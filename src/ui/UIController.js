@@ -8,8 +8,6 @@ export class UIController {
         this.cardSelect = document.getElementById('card-select')
         this.shaderSelect = document.getElementById('shader-select')
         this.maskSelect = document.getElementById('mask-select')
-        this.hdrToggle = document.getElementById('hdr-toggle')
-        this.saturationToggle = document.getElementById('saturation-toggle')
         this.bloomToggle = document.getElementById('bloom-toggle')
         this.showMaskToggle = document.getElementById('show-mask-toggle')
         this.cardTextInput = document.getElementById('card-text')
@@ -27,14 +25,6 @@ export class UIController {
         this.maskSelect.addEventListener('change', (e) => this.onMaskChange(e))
 
         // Effect toggles
-        this.hdrToggle.addEventListener('change', (e) => {
-            this.app.hdrEnabled = e.target.checked
-        })
-
-        this.saturationToggle.addEventListener('change', (e) => {
-            this.app.saturationBoostEnabled = e.target.checked
-        })
-
         this.bloomToggle.addEventListener('change', (e) => {
             this.app.bloomPass.enabled = e.target.checked
         })
@@ -118,10 +108,7 @@ export class UIController {
         this.app.updateCanvasSize()
         this.app.context.resize()
         this.app.renderer.updateProjection(this.app.context.getAspectRatio())
-        this.app.effectsPass.resize(this.app.canvas.width, this.app.canvas.height)
         this.app.bloomPass.resize(this.app.canvas.width, this.app.canvas.height)
-        // Update bloom output FBO after resize
-        this.app.bloomPass.setOutputFBO(this.app.effectsPass.sceneFBO.fbo)
     }
 
     // Sync dropdown values with app state

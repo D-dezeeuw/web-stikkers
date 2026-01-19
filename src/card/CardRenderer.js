@@ -84,11 +84,10 @@ export class CardRenderer {
         shader.setUniform2f('u_cardRotation', rotation[0], rotation[1])
 
         // Set effect settings
-        shader.setUniform1f('u_hdrEnabled', effectSettings.hdrEnabled ? 1.0 : 0.0)
-        shader.setUniform1f('u_saturationBoost', effectSettings.saturationBoostEnabled ? 1.0 : 0.0)
         shader.setUniform1f('u_showMask', effectSettings.showMask ? 1.0 : 0.0)
         shader.setUniform1f('u_maskActive', effectSettings.maskActive ? 1.0 : 0.0)
         shader.setUniform1f('u_isBaseShader', effectSettings.isBaseShader ? 1.0 : 0.0)
+        shader.setUniform1f('u_textOpacity', effectSettings.textOpacity ?? 0.2)
 
         // Bind textures using configuration
         for (const { slot, name, uniform } of TEXTURE_BINDINGS) {

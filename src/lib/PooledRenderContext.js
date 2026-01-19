@@ -150,7 +150,7 @@ export class PooledRenderContext {
     }
 
     /**
-     * Assign this context to an owner (Stikker instance)
+     * Assign this context to an owner (sticker instance)
      * @param {object} owner - The owner requesting this context
      */
     assignTo(owner) {

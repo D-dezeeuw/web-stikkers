@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stikker Web Component Demo</title>
+    <title>sticker Web Component Demo</title>
     <style>
         * {
             box-sizing: border-box;
@@ -65,6 +65,10 @@
             margin-bottom: 1rem;
         }
 
+        .control-group.url-input.hidden {
+            display: none;
+        }
+
         label {
             display: block;
             margin-bottom: 0.25rem;
@@ -113,8 +117,35 @@
             gap: 1rem;
         }
 
-        .card-grid stikker {
+        .card-grid sticker-card {
             width: 100%;
+            cursor: pointer;
+        }
+
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-card {
+            height: 85vh;
+            aspect-ratio: 5/8;
+        }
+        .overlay-card sticker-card {
+            width: 100%;
+            height: 100%;
         }
 
         /* Code example */
@@ -149,7 +180,12 @@
     </style>
 </head>
 <body>
-    <h1>&lt;stikker-card&gt;</h1>
+    <!-- Overlay for expanded card view -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-card" id="overlay-card"></div>
+    </div>
+
+    <h1>&lt;sticker-card&gt;</h1>
     <p class="subtitle">WebGL Card Shader Web Component</p>
 
     <!-- Demo 1: Interactive single card -->
@@ -157,15 +193,16 @@
         <h2>Interactive Demo</h2>
         <div class="single-card">
             <div class="card-container">
-                <stikker-card
+                <sticker-card
                     id="demo-card"
                     shader="holographic"
-                    card-src="zelda"
+                    card-src="src/textures/zelda/visual.png"
+                    card-normal="src/textures/zelda/normal.png"
                     card-name="Link"
                     card-number="001/100"
                     mask="normal"
                     interactive
-                ></stikker-card>
+                ></sticker-card>
             </div>
             <div class="controls">
                 <div class="control-group">
@@ -187,10 +224,20 @@
                 <div class="control-group">
                     <label for="card-src-select">Card Source</label>
                     <select id="card-src-select">
-                        <option value="zelda" selected>Zelda</option>
+                        <option value="custom" selected>Custom URL</option>
                         <option value="random-emoji">Random Emoji</option>
                         <option value="random-geometric">Random Geometric</option>
                     </select>
+                </div>
+
+                <div class="control-group url-input" id="visual-url-group">
+                    <label for="card-src-url">Visual URL</label>
+                    <input type="text" id="card-src-url" value="src/textures/zelda/visual.png" placeholder="URL to card image">
+                </div>
+
+                <div class="control-group url-input" id="normal-url-group">
+                    <label for="card-normal-url">Normal Map URL (optional)</label>
+                    <input type="text" id="card-normal-url" value="src/textures/zelda/normal.png" placeholder="URL to normal map">
                 </div>
 
                 <div class="control-group">
@@ -217,19 +264,6 @@
                     <input type="text" id="card-number" value="001/100">
                 </div>
 
-                <div class="control-group">
-                    <label>Effect Options</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="hdr-toggle">
-                            HDR
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="saturation-toggle">
-                            Saturation
-                        </label>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -247,29 +281,30 @@
         <h2>Usage</h2>
         <pre><code><span class="code-comment">&lt;!-- Import the library --&gt;</span>
 <span class="code-tag">&lt;script</span> <span class="code-attr">type</span>=<span class="code-string">"module"</span><span class="code-tag">&gt;</span>
-  import { registerStikkerElement } from './src/index.js'
-  registerStikkerElement()
+  import { registerstickerElement } from './src/index.js'
+  registerstickerElement()
 <span class="code-tag">&lt;/script&gt;</span>
 
 <span class="code-comment">&lt;!-- Use the web component --&gt;</span>
-<span class="code-tag">&lt;stikker</span>
+<span class="code-tag">&lt;sticker</span>
   <span class="code-attr">shader</span>=<span class="code-string">"holographic"</span>
-  <span class="code-attr">card-src</span>=<span class="code-string">"zelda"</span>
+  <span class="code-attr">card-src</span>=<span class="code-string">"path/to/card.png"</span>
+  <span class="code-attr">card-normal</span>=<span class="code-string">"path/to/normal.png"</span>
   <span class="code-attr">card-name</span>=<span class="code-string">"Link"</span>
   <span class="code-attr">card-number</span>=<span class="code-string">"001/100"</span>
   <span class="code-attr">interactive</span>
-<span class="code-tag">&gt;&lt;/stikker&gt;</span>
+<span class="code-tag">&gt;&lt;/sticker&gt;</span>
 
 <span class="code-comment">&lt;!-- Lazy loading (for many cards) --&gt;</span>
-<span class="code-tag">&lt;stikker</span> <span class="code-attr">lazy</span> <span class="code-attr">shader</span>=<span class="code-string">"foil"</span> <span class="code-attr">card-src</span>=<span class="code-string">"random-emoji"</span><span class="code-tag">&gt;&lt;/stikker&gt;</span>
+<span class="code-tag">&lt;sticker</span> <span class="code-attr">lazy</span> <span class="code-attr">shader</span>=<span class="code-string">"foil"</span> <span class="code-attr">card-src</span>=<span class="code-string">"random-emoji"</span><span class="code-tag">&gt;&lt;/sticker&gt;</span>
 </code></pre>
     </div>
 
     <script type="module">
-        import { Stikker, registerStikkerElement } from './src/index.js'
+        import { sticker, registerstickerElement } from './src/index.js'
 
         // Register the web component
-        registerStikkerElement()
+        registerstickerElement()
 
         // Wait for DOM
         document.addEventListener('DOMContentLoaded', () => {
@@ -280,10 +315,76 @@
                 demoCard.setAttribute('shader', e.target.value)
             })
 
-            // Card source select
-            document.getElementById('card-src-select').addEventListener('change', (e) => {
-                demoCard.setAttribute('card-src', e.target.value)
+            // URL input elements
+            const srcUrlInput = document.getElementById('card-src-url')
+            const normalUrlInput = document.getElementById('card-normal-url')
+            const srcSelect = document.getElementById('card-src-select')
+            const visualUrlGroup = document.getElementById('visual-url-group')
+            const normalUrlGroup = document.getElementById('normal-url-group')
+
+            // Show/hide URL inputs based on preset
+            function updateUrlVisibility() {
+                const isCustom = srcSelect.value === 'custom'
+                visualUrlGroup.classList.toggle('hidden', !isCustom)
+                normalUrlGroup.classList.toggle('hidden', !isCustom)
+            }
+
+            // Apply card source based on current selection
+            function applyCardSource() {
+                // Clear error styling
+                srcUrlInput.style.borderColor = ''
+                normalUrlInput.style.borderColor = ''
+
+                const preset = srcSelect.value
+                if (preset === 'custom') {
+                    const src = srcUrlInput.value.trim()
+                    const normal = normalUrlInput.value.trim()
+                    if (src) {
+                        demoCard.setAttribute('card-src', src)
+                    }
+                    if (normal) {
+                        demoCard.setAttribute('card-normal', normal)
+                    } else {
+                        demoCard.removeAttribute('card-normal')
+                    }
+                } else {
+                    // random-emoji or random-geometric
+                    demoCard.setAttribute('card-src', preset)
+                    demoCard.removeAttribute('card-normal')
+                }
+            }
+
+            // Card source preset select
+            srcSelect.addEventListener('change', () => {
+                updateUrlVisibility()
+                applyCardSource()
             })
+
+            // Manual URL input - apply on blur
+            srcUrlInput.addEventListener('blur', applyCardSource)
+            normalUrlInput.addEventListener('blur', applyCardSource)
+
+            // Listen for load errors
+            demoCard.addEventListener('sticker:error', (e) => {
+                srcUrlInput.style.borderColor = 'red'
+                normalUrlInput.style.borderColor = 'red'
+                console.error('Card load error:', e.detail.error)
+            })
+
+            // Update card name input when random content generates a name
+            function updateGeneratedName(e) {
+                // Only handle events from the demo card itself, not bubbled events
+                if (e.target !== demoCard) return
+
+                const generatedName = demoCard.generatedName
+                if (generatedName && srcSelect.value !== 'custom') {
+                    // Update both the input field AND the card attribute
+                    document.getElementById('card-name').value = generatedName
+                    demoCard.setAttribute('card-name', generatedName)
+                }
+            }
+            demoCard.addEventListener('sticker:ready', updateGeneratedName)
+            demoCard.addEventListener('sticker:source-loaded', updateGeneratedName)
 
             // Mask select
             document.getElementById('mask-select').addEventListener('change', (e) => {
@@ -300,37 +401,69 @@
                 demoCard.setAttribute('card-number', e.target.value)
             })
 
-            // HDR toggle
-            document.getElementById('hdr-toggle').addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    demoCard.setAttribute('hdr', '')
-                } else {
-                    demoCard.removeAttribute('hdr')
-                }
-            })
+            // Overlay manager
+            const overlay = document.getElementById('overlay')
+            const overlayCard = document.getElementById('overlay-card')
+            let currentOverlayCard = null
 
-            // Saturation toggle
-            document.getElementById('saturation-toggle').addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    demoCard.setAttribute('saturation', '')
-                } else {
-                    demoCard.removeAttribute('saturation')
+            function openOverlay(config, sourceElement) {
+                overlay.classList.add('active')
+                const card = document.createElement('sticker-card')
+                card.setAttribute('shader', config.shader)
+                card.setAttribute('card-src', config.src)
+                if (config.normal) {
+                    card.setAttribute('card-normal', config.normal)
                 }
+                card.setAttribute('card-number', config.cardNumber)
+                card.setAttribute('interactive', '')
+                overlayCard.innerHTML = ''
+                overlayCard.appendChild(card)
+                currentOverlayCard = card
+                // Copy content for random sources
+                if (sourceElement) {
+                    card.copyContentFrom(sourceElement)
+                }
+            }
+
+            function closeOverlay() {
+                overlay.classList.remove('active')
+                if (currentOverlayCard) {
+                    currentOverlayCard.remove()
+                    currentOverlayCard = null
+                }
+            }
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) closeOverlay()
             })
 
             // Create lazy loading grid
             const grid = document.getElementById('lazy-grid')
-            const shaders = Stikker.shaderNames
-            const sources = ['zelda', 'random-emoji', 'random-geometric']
+            const shaders = sticker.shaderNames
+            const sources = [
+                { src: 'random-emoji', normal: null },
+                { src: 'random-geometric', normal: null }
+            ]
 
             for (let i = 0; i < 12; i++) {
-                const stikker = document.createElement('stikker')
-                stikker.setAttribute('lazy', '')
-                stikker.setAttribute('shader', shaders[i % shaders.length])
-                stikker.setAttribute('card-src', sources[i % sources.length])
-                stikker.setAttribute('card-number', `${String(i + 1).padStart(3, '0')}/012`)
-                stikker.setAttribute('interactive', '')
-                grid.appendChild(stikker)
+                const card = document.createElement('sticker-card')
+                const source = sources[i % sources.length]
+                const config = {
+                    shader: shaders[i % shaders.length],
+                    src: source.src,
+                    normal: source.normal,
+                    cardNumber: `${String(i + 1).padStart(3, '0')}/012`
+                }
+                card.setAttribute('lazy', '')
+                card.setAttribute('shader', config.shader)
+                card.setAttribute('card-src', config.src)
+                if (config.normal) {
+                    card.setAttribute('card-normal', config.normal)
+                }
+                card.setAttribute('card-number', config.cardNumber)
+                card.setAttribute('interactive', '')
+                card.addEventListener('click', () => openOverlay(config, card))
+                grid.appendChild(card)
             }
         })
     </script>

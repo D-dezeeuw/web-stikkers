@@ -77,8 +77,6 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
 
 out vec4 fragColor;
@@ -90,23 +88,6 @@ void main() {
     // Overlay text on base texture (white text)
     float textAlpha = texture(u_textTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), textAlpha);
-
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -145,10 +126,9 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
 uniform float u_maskActive;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -311,27 +291,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        // Boost bright areas more than darks (contrast increase)
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-
-        // ACES filmic tonemapping - better contrast than Reinhard
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-
-        // Glow on bright areas (multiplicative, not additive)
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.2;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask (including text)
     if (u_showMask > 0.5) {
@@ -372,9 +333,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -472,22 +432,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -527,9 +473,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -686,22 +631,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -742,9 +673,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -912,22 +842,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -968,9 +884,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -1063,22 +978,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -1118,9 +1019,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -1339,22 +1239,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -1395,9 +1281,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -1501,22 +1386,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -1557,9 +1428,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -1676,22 +1546,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -1733,9 +1589,8 @@ uniform sampler2D u_numberTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 uniform float u_showMask;
+uniform float u_textOpacity;
 
 out vec4 fragColor;
 
@@ -1850,22 +1705,8 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // HDR + Tonemap (ACES filmic)
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = finalColor * (1.0 + finalColor * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        finalColor = a / b;
-        float brightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        finalColor += finalColor * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(finalColor, vec3(0.299, 0.587, 0.114)));
-        finalColor = mix(gray, finalColor, 1.5);
-    }
+    // Add white overlay for text readability (opacity controlled by uniform)
+    finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
     // Debug: show mask
     if (u_showMask > 0.5) {
@@ -2029,34 +1870,12 @@ precision highp float;
 in vec2 v_uv;
 
 uniform sampler2D u_scene;
-uniform float u_hdrEnabled;
-uniform float u_saturationBoost;
 
 out vec4 fragColor;
 
 void main() {
-    vec4 scene = texture(u_scene, v_uv);
-    vec3 color = scene.rgb;
-
-    // HDR + ACES Filmic Tonemapping
-    if (u_hdrEnabled > 0.5) {
-        vec3 hdr = color * (1.0 + color * 0.5);
-        vec3 a = hdr * (hdr + 0.0245786) - 0.000090537;
-        vec3 b = hdr * (0.983729 * hdr + 0.4329510) + 0.238081;
-        color = a / b;
-        float brightness = dot(color, vec3(0.299, 0.587, 0.114));
-        float glow = smoothstep(0.5, 1.0, brightness) * 0.15;
-        color += color * glow;
-    }
-
-    // Saturation boost
-    if (u_saturationBoost > 0.5) {
-        vec3 gray = vec3(dot(color, vec3(0.299, 0.587, 0.114)));
-        color = mix(gray, color, 1.5);
-    }
-
-    // Preserve scene alpha for transparency
-    fragColor = vec4(color, scene.a);
+    // Simple passthrough - HDR/saturation removed
+    fragColor = texture(u_scene, v_uv);
 }
 `,
     },

@@ -22,6 +22,11 @@ export class CardController {
         this.handleTouchMove = this.onTouchMove.bind(this)
 
         this.bindEvents()
+
+        // Check if mouse is already over canvas (e.g., overlay opened under cursor)
+        if (this.canvas.matches(':hover')) {
+            this.isHovering = true
+        }
     }
 
     update(deltaTime) {

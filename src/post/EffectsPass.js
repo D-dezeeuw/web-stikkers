@@ -136,10 +136,6 @@ export class EffectsPass {
         gl.bindTexture(gl.TEXTURE_2D, sceneTexture)
         this.shader.setUniform1i('u_scene', 0)
 
-        // Set effect uniforms
-        this.shader.setUniform1f('u_hdrEnabled', effectSettings.hdrEnabled ? 1.0 : 0.0)
-        this.shader.setUniform1f('u_saturationBoost', effectSettings.saturationBoostEnabled ? 1.0 : 0.0)
-
         // Draw fullscreen quad
         gl.bindVertexArray(this.quadVAO)
         gl.drawArrays(gl.TRIANGLES, 0, 6)

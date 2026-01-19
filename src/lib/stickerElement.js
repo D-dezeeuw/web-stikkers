@@ -1,11 +1,11 @@
 /**
- * StikkerElement - Web Component wrapper for Stikker
+ * stickerElement - Web Component wrapper for sticker
  *
  * Usage:
- *   <stikker shader="holographic" card-src="zelda" card-name="Link"></stikker>
+ *   <sticker shader="holographic" card-src="zelda" card-name="Link"></sticker>
  */
 
-import { Stikker } from './Stikker.js'
+import { sticker } from './sticker.js'
 import { WebGLContextPool } from './WebGLContextPool.js'
 
 // Global render queue to prevent WebGL context exhaustion
@@ -65,7 +65,7 @@ async function processRenderQueue() {
 
 /**
  * Remove an element from the render queue (e.g., when disconnected before rendering)
- * @param {StikkerElement} element
+ * @param {stickerElement} element
  */
 function removeFromRenderQueue(element) {
     const index = renderQueue.findIndex(item => item.element === element)
@@ -110,32 +110,31 @@ const TEMPLATE = `
 const ATTR_TO_OPTION = {
     'shader': 'shader',
     'card-src': 'cardSrc',
+    'card-normal': 'cardNormal',
     'card-name': 'cardName',
     'card-number': 'cardNumber',
     'mask': 'mask',
     'bloom': 'bloom',
-    'hdr': 'hdr',
-    'saturation': 'saturation',
     'interactive': 'interactive',
     'lazy': 'lazy',
     'autoplay': 'autoplay'
 }
 
-// Attributes that don't map to Stikker options (handled separately)
+// Attributes that don't map to sticker options (handled separately)
 const ELEMENT_ONLY_ATTRS = ['lazy-margin']
 
 // Boolean attributes
-const BOOLEAN_ATTRS = ['bloom', 'hdr', 'saturation', 'interactive', 'lazy', 'autoplay']
+const BOOLEAN_ATTRS = ['bloom', 'interactive', 'lazy', 'autoplay']
 
 // Default margin for viewport intersection (pixels)
 const DEFAULT_LAZY_MARGIN = 200
 
-export class StikkerElement extends HTMLElement {
+export class stickerElement extends HTMLElement {
     static observedAttributes = [...Object.keys(ATTR_TO_OPTION), ...ELEMENT_ONLY_ATTRS]
 
     constructor() {
         super()
-        this.stikker = null
+        this.sticker = null
         this._initialized = false
         this._isLazy = false
 
@@ -165,16 +164,34 @@ export class StikkerElement extends HTMLElement {
         // Parse options from attributes
         const options = this._getOptionsFromAttributes()
 
-        // Create Stikker instance
-        this.stikker = new Stikker(this._canvas, options)
+        // Create sticker instance
+        this.sticker = new sticker(this._canvas, options)
+
+        // Wire up error callback to dispatch events
+        this.sticker.onError = (err) => {
+            this.dispatchEvent(new CustomEvent('sticker:error', {
+                bubbles: true,
+                composed: true,
+                detail: { error: err }
+            }))
+        }
+
+        // Wire up source loaded callback to dispatch events (for generated names etc)
+        this.sticker.onSourceLoaded = () => {
+            this.dispatchEvent(new CustomEvent('sticker:source-loaded', {
+                bubbles: true,
+                composed: true,
+                detail: { generatedName: this.sticker.generatedName }
+            }))
+        }
 
         // Wire up static image for lazy mode
         if (options.lazy) {
-            this.stikker.staticImage = this._staticImage
+            this.sticker.staticImage = this._staticImage
             this._setupLazyMode()
         } else {
             // Initialize immediately
-            this._initStikker()
+            this._initsticker()
         }
 
         this._initialized = true
@@ -190,7 +207,7 @@ export class StikkerElement extends HTMLElement {
         // Remove from render queue if pending
         removeFromRenderQueue(this)
 
-        // Remove lazy mode event listeners BEFORE destroying stikker
+        // Remove lazy mode event listeners BEFORE destroying sticker
         // This is critical to prevent context leaks
         if (this._isLazy) {
             this.removeEventListener('mouseenter', this._boundActivate)
@@ -199,11 +216,11 @@ export class StikkerElement extends HTMLElement {
 
         // Cancel any pending borrow requests from the pool
         const pool = WebGLContextPool.getInstance()
-        pool.cancelRequest(this.stikker)
+        pool.cancelRequest(this.sticker)
 
         // destroy() handles releasing the borrowed context back to the pool
-        this.stikker?.destroy()
-        this.stikker = null
+        this.sticker?.destroy()
+        this.sticker = null
         this._initialized = false
         this._isLazy = false
         this._hasRenderedStaticFrame = false
@@ -212,36 +229,41 @@ export class StikkerElement extends HTMLElement {
 
     attributeChangedCallback(name, oldVal, newVal) {
         if (oldVal === newVal) return
-        if (!this._initialized || !this.stikker) return
+        if (!this._initialized || !this.sticker) return
 
         const optionName = ATTR_TO_OPTION[name]
         if (!optionName) return
 
         const value = this._parseAttributeValue(name, newVal)
-        this.stikker.setOptions({ [optionName]: value })
+        this.sticker.setOptions({ [optionName]: value })
     }
 
     /**
-     * Initialize the Stikker (non-lazy mode)
+     * Initialize the sticker (non-lazy mode)
      */
-    async _initStikker() {
+    async _initsticker() {
         // Wait for layout to be computed
         await new Promise(resolve => requestAnimationFrame(resolve))
 
         try {
-            await this.stikker.init()
+            await this.sticker.init()
 
             if (this._getAttrBool('autoplay', true)) {
-                this.stikker.start()
+                this.sticker.start()
             }
 
-            this.dispatchEvent(new CustomEvent('stikker:ready', {
+            // Activate if mouse is already over element (e.g., overlay scenarios)
+            if (this.matches(':hover')) {
+                this.sticker.isActive = true
+            }
+
+            this.dispatchEvent(new CustomEvent('sticker:ready', {
                 bubbles: true,
                 composed: true
             }))
         } catch (err) {
-            console.error('Failed to initialize Stikker:', err)
-            this.dispatchEvent(new CustomEvent('stikker:error', {
+            console.error('Failed to initialize sticker:', err)
+            this.dispatchEvent(new CustomEvent('sticker:error', {
                 bubbles: true,
                 composed: true,
                 detail: { error: err }
@@ -258,6 +280,11 @@ export class StikkerElement extends HTMLElement {
         // Setup hover listeners (using bound handlers so they can be removed later)
         this.addEventListener('mouseenter', this._boundActivate)
         this.addEventListener('mouseleave', this._boundDeactivate)
+
+        // Track if mouse is already over element (e.g., overlay scenarios)
+        if (this.matches(':hover')) {
+            this._mouseIsOver = true
+        }
 
         // Setup Intersection Observer for viewport-based static frame rendering
         this._setupIntersectionObserver()
@@ -327,7 +354,7 @@ export class StikkerElement extends HTMLElement {
         } finally {
             this._isReady = true
             // Reconcile: if mouse is hovering, activate now
-            if (this._mouseIsOver && !this.stikker.isActive) {
+            if (this._mouseIsOver && !this.sticker.isActive) {
                 this._activate()
             }
         }
@@ -339,7 +366,7 @@ export class StikkerElement extends HTMLElement {
     async _doRenderStaticFrame() {
         // Wait for layout to be computed
         await new Promise(resolve => requestAnimationFrame(resolve))
-        await this.stikker.renderStaticFrame()
+        await this.sticker.renderStaticFrame()
     }
 
     /**
@@ -366,15 +393,15 @@ export class StikkerElement extends HTMLElement {
      * Activate (lazy mode)
      */
     async _activate() {
-        if (!this.stikker) return
+        if (!this.sticker) return
 
         this._isReady = false
         try {
-            await this.stikker.activate()
+            await this.sticker.activate()
         } finally {
             this._isReady = true
             // Reconcile: if mouse left while activating, deactivate now
-            if (!this._mouseIsOver && this.stikker.isActive) {
+            if (!this._mouseIsOver && this.sticker.isActive) {
                 this._deactivate()
             }
         }
@@ -384,8 +411,8 @@ export class StikkerElement extends HTMLElement {
      * Deactivate (lazy mode)
      */
     _deactivate() {
-        if (!this.stikker) return
-        this.stikker.deactivate()
+        if (!this.sticker) return
+        this.sticker.deactivate()
     }
 
     /**
@@ -429,78 +456,78 @@ export class StikkerElement extends HTMLElement {
     // ==================== Public API ====================
 
     /**
-     * Get the underlying Stikker instance
+     * Get the underlying sticker instance
      */
     get instance() {
-        return this.stikker
+        return this.sticker
     }
 
     /**
      * Start rendering
      */
     start() {
-        this.stikker?.start()
+        this.sticker?.start()
     }
 
     /**
      * Stop rendering
      */
     stop() {
-        this.stikker?.stop()
+        this.sticker?.stop()
     }
 
     /**
      * Set shader effect
      */
     setShader(name) {
-        this.stikker?.setShader(name)
+        this.sticker?.setShader(name)
     }
 
     /**
      * Set card image source
      */
     setCardSrc(src) {
-        this.stikker?.setCardSrc(src)
+        this.sticker?.setCardSrc(src)
     }
 
     /**
      * Set card name text
      */
     setCardName(name) {
-        this.stikker?.setCardName(name)
+        this.sticker?.setCardName(name)
     }
 
     /**
      * Set card number text
      */
     setCardNumber(number) {
-        this.stikker?.setCardNumber(number)
+        this.sticker?.setCardNumber(number)
     }
 
     /**
      * Set effect mask
      */
     setMask(mask) {
-        this.stikker?.setMask(mask)
+        this.sticker?.setMask(mask)
     }
 
     /**
      * Set multiple options
      */
     setOptions(options) {
-        this.stikker?.setOptions(options)
+        this.sticker?.setOptions(options)
     }
 
     /**
-     * Copy content from another StikkerElement (for overlay/clone use)
+     * Copy content from another stickerElement (for overlay/clone use)
      * This allows generated content (random-emoji, random-geometric) to be
      * preserved when creating a copy of a card (e.g., for overlay display).
      * No data leaks externally - this is internal component communication.
-     * @param {StikkerElement} sourceElement - The source element to copy from
+     * @param {stickerElement} sourceElement - The source element to copy from
      */
     copyContentFrom(sourceElement) {
-        if (sourceElement?.stikker && this.stikker) {
-            this.stikker._copyContentFrom(sourceElement.stikker)
+        if (sourceElement?.sticker && this.sticker) {
+            this.sticker._copyContentFrom(sourceElement.sticker)
         }
     }
 
@@ -518,6 +545,14 @@ export class StikkerElement extends HTMLElement {
      */
     get hasRenderedStaticFrame() {
         return this._hasRenderedStaticFrame
+    }
+
+    /**
+     * Get the generated name (for random-emoji or random-geometric content)
+     * @returns {string|null}
+     */
+    get generatedName() {
+        return this.sticker?.generatedName || null
     }
 
     /**
@@ -544,32 +579,32 @@ export class StikkerElement extends HTMLElement {
      * Available shader names
      */
     static get shaderNames() {
-        return Stikker.shaderNames
+        return sticker.shaderNames
     }
 
     /**
      * Available mask names
      */
     static get maskNames() {
-        return Stikker.maskNames
+        return sticker.maskNames
     }
 
     /**
      * Built-in card sources
      */
     static get builtinSources() {
-        return Stikker.builtinSources
+        return sticker.builtinSources
     }
 }
 
 // Register the custom element
-export function registerStikkerElement(tagName = 'stikker-card') {
+export function registerstickerElement(tagName = 'sticker-card') {
     if (!customElements.get(tagName)) {
-        customElements.define(tagName, StikkerElement)
+        customElements.define(tagName, stickerElement)
     }
 }
 
 // Auto-register if not in a module context that might want to customize
-if (typeof window !== 'undefined' && !window.__STIKKER_NO_AUTO_REGISTER__) {
-    registerStikkerElement()
+if (typeof window !== 'undefined' && !window.__sticker_NO_AUTO_REGISTER__) {
+    registerstickerElement()
 }
