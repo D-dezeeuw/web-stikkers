@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Shader Collection</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <label for="card-select">Card:</label>
+            <select id="card-select">
+                <option value="zelda" selected>Zelda</option>
+                <option value="demo-thin">Demo (Thin Border)</option>
+                <option value="demo-thick">Demo (Thick Border)</option>
+            </select>
+            <label for="shader-select">Shader Effect:</label>
+            <select id="shader-select">
+                <option value="base">Base</option>
+                <option value="holographic">Holographic</option>
+                <option value="foil" selected>Foil</option>
+                <option value="parallax">Parallax</option>
+                <option value="cracked-ice">Cracked Ice</option>
+                <option value="refractor">Refractor</option>
+                <option value="galaxy">Galaxy Foil</option>
+                <option value="starburst">Starburst</option>
+                <option value="prizm">Prizm</option>
+            </select>
+            <label for="mask-select">Effect Mask:</label>
+            <select id="mask-select">
+                <option value="full">Full (No Mask)</option>
+                <option value="border">Border Only</option>
+                <option value="center">Center Only</option>
+                <option value="art-window">Art Window</option>
+                <option value="radial-edge">Radial Edge</option>
+                <option value="radial-center">Radial Center</option>
+                <option value="normal-map" selected>Normal Map</option>
+                <option value="texture-brightness">Texture Brightness</option>
+            </select>
+            <label for="card-text">Name:</label>
+            <input type="text" id="card-text" value="Link" maxlength="20">
+            <label for="card-number">Number:</label>
+            <input type="text" id="card-number" value="69/321" maxlength="10">
+            <div class="effect-toggles">
+                <label><input type="checkbox" id="hdr-toggle"> HDR Glow</label>
+                <label><input type="checkbox" id="saturation-toggle"> Saturation Boost</label>
+                <label><input type="checkbox" id="bloom-toggle"> Bloom</label>
+                <label><input type="checkbox" id="show-mask-toggle"> Show Mask</label>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="card-canvas"></canvas>
+        </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

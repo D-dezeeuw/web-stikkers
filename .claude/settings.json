@@ -1,0 +1,34 @@
+{
+  "projectType": "fullstack",
+  "languages": ["javascript", "vue"],
+  "framework": {
+    "frontend": {
+      "name": "vue3",
+      "bundler": "vite",
+      "stateManagement": "pinia",
+      "styling": "tailwind",
+      "charts": "chartjs"
+    },
+    "backend": {
+      "name": "express",
+      "runtime": "node"
+    }
+  },
+  "codeStyle": {
+    "semicolons": false,
+    "quotes": "single",
+    "indent": 2,
+    "trailingComma": "none",
+    "arrowParens": "avoid"
+  },
+  "testing": {
+    "backend": "jest",
+    "frontend": "vitest"
+  },
+  "conventions": {
+    "components": "PascalCase",
+    "files": "kebab-case",
+    "functions": "camelCase",
+    "constants": "SCREAMING_SNAKE_CASE"
+  }
+}

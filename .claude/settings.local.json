@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)"
+    ]
+  },
+  "outputStyle": "default"
+}
