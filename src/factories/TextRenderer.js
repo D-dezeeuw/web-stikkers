@@ -18,10 +18,10 @@ export class TextRenderer {
         const width = 500
         const height = 800
 
-        // Normalize empty strings
-        const normalizedText = cardText?.trim() || ''
-        const normalizedNumber = cardNumber?.trim() || ''
-        const normalizedCollection = cardCollection?.trim() || ''
+        // Normalize empty strings (preserve spaces for positioning)
+        const normalizedText = cardText || ''
+        const normalizedNumber = cardNumber || ''
+        const normalizedCollection = cardCollection || ''
 
         // Only update textures that have changed
         const textChanged = this._lastText !== normalizedText

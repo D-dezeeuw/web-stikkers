@@ -84,12 +84,22 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
 void main() {
     vec4 baseColor = texture(u_baseTexture, v_uv);
     vec3 finalColor = baseColor.rgb;
+
+    // Apply effect mask for variant tint
+    float mask = texture(u_effectMask, v_uv).r;
+
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Overlay text on base texture (white text)
     float textAlpha = texture(u_textTexture, v_uv).r;
@@ -133,6 +143,8 @@ uniform vec2 u_cardRotation;
 uniform float u_maskActive;
 uniform float u_textOpacity;
 uniform float u_effectScale;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -296,6 +308,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -335,6 +352,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -432,6 +451,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -470,6 +494,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -626,6 +652,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -665,6 +696,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -832,6 +865,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -871,6 +909,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -963,6 +1003,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -1001,6 +1046,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -1219,6 +1266,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -1259,6 +1311,8 @@ uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
 uniform float u_effectScale;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -1362,6 +1416,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -1401,6 +1460,8 @@ uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -1517,6 +1578,11 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
+
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
@@ -1560,6 +1626,8 @@ uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
 uniform float u_effectScale;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -1698,6 +1766,11 @@ void main() {
     float textMask = texture(u_textTexture, v_uv).r;
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
+
+    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);

@@ -6,8 +6,19 @@
     <title>Card Shader Collection</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/header.css">
 </head>
-<body>
+<body class="has-header">
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="bracket">&lt;</span>STICKERS<span class="bracket">&gt;</span></a>
+        <nav class="site-nav">
+            <a href="/" class="active">Playground</a>
+            <a href="/sticker-demo">Component</a>
+            <a href="/variant-demo">Variants</a>
+            <a href="/test-grid">Grid</a>
+            <a href="/size-demo">Sizes</a>
+        </nav>
+    </header>
     <div class="container">
         <div class="controls">
             <label for="card-select">Card:</label>
@@ -39,6 +50,16 @@
                 <option value="radial-center">Radial Center</option>
                 <option value="normal-map" selected>Normal Map</option>
                 <option value="texture-brightness">Texture Brightness</option>
+            </select>
+            <label for="variant-select">Variant:</label>
+            <select id="variant-select">
+                <option value="" selected>None</option>
+                <option value="blue">Blue Parallel</option>
+                <option value="red">Red Parallel</option>
+                <option value="purple">Purple Parallel</option>
+                <option value="green">Green Parallel</option>
+                <option value="gold">Gold Parallel</option>
+                <option value="black">Black Parallel</option>
             </select>
             <label for="card-text">Name:</label>
             <input type="text" id="card-text" value="Link" maxlength="20">

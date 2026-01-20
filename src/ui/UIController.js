@@ -8,6 +8,7 @@ export class UIController {
         this.cardSelect = document.getElementById('card-select')
         this.shaderSelect = document.getElementById('shader-select')
         this.maskSelect = document.getElementById('mask-select')
+        this.variantSelect = document.getElementById('variant-select')
         this.bloomSlider = document.getElementById('bloom-slider')
         this.bloomValue = document.getElementById('bloom-value')
         this.cardTextInput = document.getElementById('card-text')
@@ -23,6 +24,9 @@ export class UIController {
 
         // Mask select
         this.maskSelect.addEventListener('change', (e) => this.onMaskChange(e))
+
+        // Variant select
+        this.variantSelect.addEventListener('change', (e) => this.onVariantChange(e))
 
         // Bloom slider
         this.bloomSlider.addEventListener('input', (e) => {
@@ -116,6 +120,16 @@ export class UIController {
         }
     }
 
+    onVariantChange(e) {
+        const variant = e.target.value || null
+        this.app.setVariant(variant)
+
+        // Update mask dropdown to show border when variant is active
+        if (variant) {
+            this.maskSelect.value = 'border'
+        }
+    }
+
     onResize() {
         this.app.updateCanvasSize()
         this.app.context.resize()
@@ -128,6 +142,7 @@ export class UIController {
         this.cardSelect.value = 'zelda'
         this.shaderSelect.value = 'holographic'
         this.maskSelect.value = 'normal-map'
+        this.variantSelect.value = ''
         this.bloomSlider.value = this.app.bloomPass.intensity
         this.bloomValue.textContent = this.app.bloomPass.intensity.toFixed(1)
     }

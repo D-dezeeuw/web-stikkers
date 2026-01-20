@@ -179,15 +179,26 @@
             color: #79c0ff;
         }
     </style>
+    <link rel="stylesheet" href="css/header.css">
 </head>
-<body>
+<body class="has-header">
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="bracket">&lt;</span>STICKERS<span class="bracket">&gt;</span></a>
+        <nav class="site-nav">
+            <a href="/">Playground</a>
+            <a href="/sticker-demo" class="active">Component</a>
+            <a href="/variant-demo">Variants</a>
+            <a href="/test-grid">Grid</a>
+            <a href="/size-demo">Sizes</a>
+        </nav>
+    </header>
+
     <!-- Overlay for expanded card view -->
     <div class="overlay" id="overlay">
         <div class="overlay-card" id="overlay-card"></div>
     </div>
 
-    <h1>&lt;sticker-card&gt;</h1>
-    <p class="subtitle">WebGL Card Shader Web Component</p>
+    <h1>&lt;sticker-card&gt; Web Component</h1>
 
     <!-- Demo 1: Interactive single card -->
     <div class="demo-section">
@@ -257,6 +268,19 @@
                 </div>
 
                 <div class="control-group">
+                    <label for="variant-select">Variant (Parallel)</label>
+                    <select id="variant-select">
+                        <option value="" selected>None</option>
+                        <option value="blue">Blue</option>
+                        <option value="red">Red</option>
+                        <option value="purple">Purple</option>
+                        <option value="green">Green</option>
+                        <option value="gold">Gold</option>
+                        <option value="black">Black</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
                     <label for="card-collection">Collection Name</label>
                     <input type="text" id="card-collection" value="">
                 </div>
@@ -304,6 +328,15 @@
   <span class="code-attr">interactive</span>
 <span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
 
+<span class="code-comment">&lt;!-- Parallel variant (colored border) --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span>
+  <span class="code-attr">shader</span>=<span class="code-string">"foil"</span>
+  <span class="code-attr">card-src</span>=<span class="code-string">"path/to/card.png"</span>
+  <span class="code-attr">variant</span>=<span class="code-string">"blue"</span>
+  <span class="code-attr">mask</span>=<span class="code-string">"border"</span>
+  <span class="code-attr">interactive</span>
+<span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
 <span class="code-comment">&lt;!-- Lazy loading (for many cards) --&gt;</span>
 <span class="code-tag">&lt;sticker-card</span>
   <span class="code-attr">lazy</span>
@@ -320,6 +353,7 @@
 <span class="code-comment">&lt;!-- card-number: Card number (e.g., "001/100") --&gt;</span>
 <span class="code-comment">&lt;!-- card-collection: Collection name --&gt;</span>
 <span class="code-comment">&lt;!-- mask: full|border|center|art-window|radial-edge|radial-center|normal|brightness --&gt;</span>
+<span class="code-comment">&lt;!-- variant: blue|red|purple|green|gold|black (Panini-style parallel colored border) --&gt;</span>
 <span class="code-comment">&lt;!-- interactive: Enable mouse/touch interaction (boolean) --&gt;</span>
 <span class="code-comment">&lt;!-- lazy: Defer WebGL init until hover (boolean) --&gt;</span>
 <span class="code-comment">&lt;!-- lazy-margin: Pixels before viewport to start rendering (default: 200) --&gt;</span>
@@ -455,6 +489,30 @@
                 }
             })
 
+            // Variant select
+            const variantSelect = document.getElementById('variant-select')
+            const maskSelect = document.getElementById('mask-select')
+            variantSelect.addEventListener('change', (e) => {
+                const variant = e.target.value
+                if (variant) {
+                    demoCard.setAttribute('variant', variant)
+                    // Auto-switch to border mask for variants
+                    maskSelect.value = 'border'
+                    demoCard.setAttribute('mask', 'border')
+                } else {
+                    demoCard.removeAttribute('variant')
+                }
+                // Sync to overlay
+                if (currentOverlayCard && currentSourceElement === demoCard) {
+                    if (variant) {
+                        currentOverlayCard.setAttribute('variant', variant)
+                        currentOverlayCard.setAttribute('mask', 'border')
+                    } else {
+                        currentOverlayCard.removeAttribute('variant')
+                    }
+                }
+            })
+
             // Card collection input
             document.getElementById('card-collection').addEventListener('input', (e) => {
                 demoCard.setAttribute('card-collection', e.target.value)
@@ -489,6 +547,9 @@
                 }
                 if (config.mask) {
                     card.setAttribute('mask', config.mask)
+                }
+                if (config.variant) {
+                    card.setAttribute('variant', config.variant)
                 }
                 card.setAttribute('card-number', config.cardNumber)
                 card.setAttribute('interactive', '')
@@ -552,7 +613,8 @@
                     cardName: demoCard.getAttribute('card-name'),
                     cardNumber: demoCard.getAttribute('card-number'),
                     cardCollection: demoCard.getAttribute('card-collection'),
-                    mask: demoCard.getAttribute('mask')
+                    mask: demoCard.getAttribute('mask'),
+                    variant: demoCard.getAttribute('variant')
                 }
                 openOverlay(config, demoCard)
             })

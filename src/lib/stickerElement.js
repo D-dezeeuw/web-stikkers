@@ -119,6 +119,7 @@ const ATTR_TO_OPTION = {
     'card-collection': 'cardCollection',
     'mask': 'mask',
     'bloom': 'bloom',
+    'variant': 'variant',
     'interactive': 'interactive',
     'lazy': 'lazy',
     'autoplay': 'autoplay',
@@ -525,6 +526,13 @@ export class stickerElement extends HTMLElement {
     }
 
     /**
+     * Set variant (parallel color)
+     */
+    setVariant(variant) {
+        this.sticker?.setVariant(variant)
+    }
+
+    /**
      * Set multiple options
      */
     setOptions(options) {
@@ -629,6 +637,13 @@ export class stickerElement extends HTMLElement {
      */
     static get sizeNames() {
         return sticker.sizeNames
+    }
+
+    /**
+     * Available variant names
+     */
+    static get variantNames() {
+        return sticker.variantNames
     }
 }
 

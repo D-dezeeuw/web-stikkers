@@ -42,5 +42,16 @@ export const CONFIG = {
         defaultSize: 256,
         maskWidth: 256,
         maskHeight: 358
-    }
+    },
+
+    // Parallel variant colors (Panini-style colored borders)
+    variants: {
+        blue:   [0.0, 0.4, 1.0],
+        red:    [1.0, 0.15, 0.15],
+        purple: [0.6, 0.1, 0.8],
+        green:  [0.1, 0.7, 0.2],
+        gold:   [1.0, 0.75, 0.0],
+        black:  [0.15, 0.15, 0.15]
+    },
+    variantOpacity: 0.2
 }

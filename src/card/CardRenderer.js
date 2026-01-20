@@ -147,6 +147,13 @@ export class CardRenderer {
             this._uniformCache.effectScale = effectScaleVal
         }
 
+        // Set variant uniforms for parallel cards
+        const variant = card.getVariant()
+        const variantActive = variant ? 1.0 : 0.0
+        const variantColor = variant ? (CONFIG.variants[variant] || [0, 0, 0]) : [0, 0, 0]
+        shader.setUniform1f('u_variantActive', variantActive)
+        shader.setUniform3f('u_variantColor', variantColor[0], variantColor[1], variantColor[2])
+
         // Bind only textures needed by the active shader
         const requiredTextures = SHADER_TEXTURES[shaderName] || TEXTURE_BINDINGS.map(b => b.name)
 

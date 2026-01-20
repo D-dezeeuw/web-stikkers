@@ -206,6 +206,10 @@ class CardShaderApp {
             this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
             this.bloomPass.endSceneRender()
             this.bloomPass.renderBloom()  // Outputs directly to screen
+
+            // Invalidate texture cache - bloom composite binds sceneFBO.texture to slot 0,
+            // which would cause a feedback loop on the next frame if CardRenderer skips rebinding
+            this.renderer.invalidateTextureCache()
         } else {
             // No bloom: card → screen (direct render)
             this.context.clear()
@@ -222,6 +226,20 @@ class CardShaderApp {
         this.geometry?.destroy()
         this.bloomPass?.destroy()
         this.textRenderer?.destroy()
+    }
+
+    /**
+     * Set the variant for parallel cards
+     * @param {string|null} variant - Variant name ('blue', 'red', 'purple', 'green', 'gold', 'black') or null
+     */
+    setVariant(variant) {
+        this.card.setVariant(variant)
+        if (variant) {
+            // Auto-apply border mask for parallels
+            this.card.setTexture('effectMask', this.effectMasks['border'])
+            this.maskActive = true
+            this.maskType = 'border'
+        }
     }
 
     /**

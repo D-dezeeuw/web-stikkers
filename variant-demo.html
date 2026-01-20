@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variant Parallels Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px 20px 10px 20px;
+            font-size: 1.5rem;
+            color: #e0e0e0;
+        }
+        .header-row {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            gap: 8px;
+            padding: 0 16px 8px 16px;
+            position: sticky;
+            top: 0;
+            background: #1a1a2e;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+        }
+        .header-cell {
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 8px 4px;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .header-cell.variant-none { color: #888; }
+        .header-cell.variant-blue { color: #66b3ff; }
+        .header-cell.variant-red { color: #ff6666; }
+        .header-cell.variant-purple { color: #b366ff; }
+        .header-cell.variant-green { color: #66ff99; }
+        .header-cell.variant-gold { color: #ffd700; }
+        .header-cell.variant-black { color: #999; }
+        .grid-container {
+            padding: 16px;
+        }
+        .shader-row {
+            display: grid;
+            grid-template-columns: 100px repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .shader-label {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #888;
+            text-transform: capitalize;
+        }
+        .card-cell {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .card-cell:hover {
+            transform: scale(1.02);
+        }
+        .card-cell sticker-card {
+            width: 100%;
+        }
+
+        /* Overlay styles */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-card {
+            position: relative;
+            height: 80vh;
+            aspect-ratio: 5/8;
+        }
+        .overlay-card sticker-card {
+            width: 100%;
+            height: 100%;
+        }
+        .overlay-label {
+            margin-top: 16px;
+            font-size: 1rem;
+            color: #ccc;
+        }
+    </style>
+    <link rel="stylesheet" href="css/header.css">
+</head>
+<body class="has-header">
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="bracket">&lt;</span>STICKERS<span class="bracket">&gt;</span></a>
+        <nav class="site-nav">
+            <a href="/">Playground</a>
+            <a href="/sticker-demo">Component</a>
+            <a href="/variant-demo" class="active">Variants</a>
+            <a href="/test-grid">Grid</a>
+            <a href="/size-demo">Sizes</a>
+        </nav>
+    </header>
+
+    <h1>Panini Parallel Variants</h1>
+
+    <!-- Column headers -->
+    <div class="header-row">
+        <div class="header-cell">Shader</div>
+        <div class="header-cell variant-none">None</div>
+        <div class="header-cell variant-blue">Blue</div>
+        <div class="header-cell variant-red">Red</div>
+        <div class="header-cell variant-purple">Purple</div>
+        <div class="header-cell variant-green">Green</div>
+        <div class="header-cell variant-gold">Gold</div>
+        <div class="header-cell variant-black">Black</div>
+    </div>
+
+    <!-- Overlay for expanded card view -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-card" id="overlay-card"></div>
+        <div class="overlay-label" id="overlay-label"></div>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+
+    <script type="module" src="src/variant-demo.js"></script>
+</body>
+</html>

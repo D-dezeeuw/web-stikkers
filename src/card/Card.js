@@ -31,6 +31,9 @@ export class Card {
             intensity: 1.0
         }
 
+        // Parallel variant (null, 'blue', 'red', 'purple', 'green', 'gold', 'black')
+        this.variant = options.variant ?? null
+
         this.modelMatrix = new Matrix4()
         this.smoothing = options.smoothing ?? 8
 
@@ -103,5 +106,13 @@ export class Card {
 
     getTexture(name) {
         return this.textures[name]
+    }
+
+    setVariant(variant) {
+        this.variant = variant
+    }
+
+    getVariant() {
+        return this.variant
     }
 }

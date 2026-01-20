@@ -20,6 +20,10 @@
             color: #fff;
         }
 
+        body.has-header {
+            padding-top: 80px;
+        }
+
         h1 {
             text-align: center;
             margin-bottom: 0.5rem;
@@ -323,8 +327,20 @@
             margin-bottom: 0.5rem;
         }
     </style>
+    <link rel="stylesheet" href="css/header.css">
 </head>
-<body>
+<body class="has-header">
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="bracket">&lt;</span>STICKERS<span class="bracket">&gt;</span></a>
+        <nav class="site-nav">
+            <a href="/">Playground</a>
+            <a href="/sticker-demo">Component</a>
+            <a href="/variant-demo">Variants</a>
+            <a href="/test-grid">Grid</a>
+            <a href="/size-demo" class="active">Sizes</a>
+        </nav>
+    </header>
+
     <!-- Overlay for expanded card view -->
     <div class="overlay" id="overlay">
         <div class="overlay-card" id="overlay-card"></div>

@@ -20,6 +20,8 @@ uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
 uniform float u_textOpacity;
 uniform float u_effectScale;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
@@ -122,6 +124,11 @@ void main() {
     float textMask = texture(u_textTexture, v_uv).r;
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
+
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);

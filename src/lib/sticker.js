@@ -71,6 +71,7 @@ const DEFAULT_OPTIONS = {
     // Effects
     mask: 'full',
     bloom: 0.95,  // 0 = off, >0 = intensity (max 2.0)
+    variant: null,  // Parallel variant: 'blue', 'red', 'purple', 'green', 'gold', 'black'
 
     // Behavior
     interactive: true,
@@ -264,6 +265,11 @@ export class sticker {
 
             // Set active shader
             this.shaderManager.use(this.options.shader)
+
+            // Set variant if specified
+            if (this.options.variant) {
+                this.card.setVariant(this.options.variant)
+            }
 
             // Setup resize observer
             this.setupResizeObserver()
@@ -1129,6 +1135,9 @@ export class sticker {
                 case 'bloom':
                     this.setBloom(value)
                     break
+                case 'variant':
+                    this.setVariant(value)
+                    break
                 case 'interactive':
                 case 'lazy':
                 case 'autoplay':
@@ -1137,6 +1146,22 @@ export class sticker {
                 case 'size':
                     this.setSize(value)
                     break
+            }
+        }
+    }
+
+    /**
+     * Set the variant (parallel color)
+     * @param {string|null} variant - Variant name ('blue'|'red'|'purple'|'green'|'gold'|'black') or null
+     */
+    setVariant(variant) {
+        if (this.options.variant === variant) return  // Skip if unchanged
+        this.options.variant = variant || null
+        if (this.card) {
+            this.card.setVariant(this.options.variant)
+            // Auto-apply border mask for parallels
+            if (this.options.variant && this.options.mask === 'full') {
+                this.setMask('border')
             }
         }
     }
@@ -1194,6 +1219,13 @@ export class sticker {
      */
     static get sizeNames() {
         return Object.keys(SIZE_PRESETS)
+    }
+
+    /**
+     * Get list of available variant names
+     */
+    static get variantNames() {
+        return Object.keys(CONFIG.variants)
     }
 
     /**

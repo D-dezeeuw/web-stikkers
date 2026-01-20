@@ -16,12 +16,22 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
+uniform vec3 u_variantColor;
+uniform float u_variantActive;
 
 out vec4 fragColor;
 
 void main() {
     vec4 baseColor = texture(u_baseTexture, v_uv);
     vec3 finalColor = baseColor.rgb;
+
+    // Apply effect mask for variant tint
+    float mask = texture(u_effectMask, v_uv).r;
+
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
+    vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
+    finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Overlay text on base texture (white text)
     float textAlpha = texture(u_textTexture, v_uv).r;

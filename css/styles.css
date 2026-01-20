@@ -27,9 +27,14 @@ body {
     align-items: center;
     color: #eee;
     padding: 1rem;
-    position:fixed;
-    top: 0;
+    position: fixed;
+    top: 52px;  /* Below header */
     z-index: 100;
+    background: rgba(26, 26, 46, 0.95);
+    backdrop-filter: blur(8px);
+    left: 0;
+    right: 0;
+    justify-content: center;
 }
 
 .controls label {
