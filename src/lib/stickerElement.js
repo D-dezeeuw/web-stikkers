@@ -113,6 +113,7 @@ const ATTR_TO_OPTION = {
     'card-normal': 'cardNormal',
     'card-name': 'cardName',
     'card-number': 'cardNumber',
+    'card-collection': 'cardCollection',
     'mask': 'mask',
     'bloom': 'bloom',
     'interactive': 'interactive',
@@ -553,6 +554,14 @@ export class stickerElement extends HTMLElement {
      */
     get generatedName() {
         return this.sticker?.generatedName || null
+    }
+
+    /**
+     * Get the generated collection name (for random-emoji or random-geometric content)
+     * @returns {string|null}
+     */
+    get generatedCollection() {
+        return this.sticker?.generatedCollection || null
     }
 
     /**

@@ -5,9 +5,10 @@ export class TextRenderer {
         this.gl = gl
         this.textTexture = null
         this.numberTexture = null
+        this.collectionTexture = null
     }
 
-    createTextTextures(cardText, cardNumber, card) {
+    createTextTextures(cardText, cardNumber, cardCollection, card) {
         // Balanced resolution (2x base resolution)
         const width = 500
         const height = 800
@@ -60,10 +61,33 @@ export class TextRenderer {
         }
         this.numberTexture.createFromImage(numberCanvas)
         card.setTexture('number', this.numberTexture)
+
+        // Create collection texture (top left - overlay only)
+        const collectionCanvas = document.createElement('canvas')
+        collectionCanvas.width = width
+        collectionCanvas.height = height
+        const collectionCtx = collectionCanvas.getContext('2d')
+        collectionCtx.clearRect(0, 0, width, height)
+
+        if (cardCollection && cardCollection.trim()) {
+            collectionCtx.fillStyle = '#ffffff'
+            collectionCtx.textAlign = 'left'
+            collectionCtx.textBaseline = 'top'
+            // Scale font size by 2x for balanced res
+            collectionCtx.font = 'bold 28px Arial, sans-serif'
+            collectionCtx.fillText(cardCollection, width * 0.04, height * 0.05)
+        }
+
+        if (!this.collectionTexture) {
+            this.collectionTexture = new Texture(this.gl)
+        }
+        this.collectionTexture.createFromImage(collectionCanvas)
+        card.setTexture('collection', this.collectionTexture)
     }
 
     destroy() {
         if (this.textTexture) this.textTexture.destroy()
         if (this.numberTexture) this.numberTexture.destroy()
+        if (this.collectionTexture) this.collectionTexture.destroy()
     }
 }

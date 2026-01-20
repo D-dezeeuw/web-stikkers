@@ -47,6 +47,7 @@ const DEFAULT_OPTIONS = {
     // Text overlays
     cardName: '',
     cardNumber: '',
+    cardCollection: '',
 
     // Effects
     mask: 'full',
@@ -107,6 +108,7 @@ export class sticker {
         this._cachedMaskImageUrl = null
         this._isGeneratedContent = false
         this._generatedName = null
+        this._generatedCollection = null
 
         // Static image for lazy mode
         this.staticImage = null
@@ -267,7 +269,9 @@ export class sticker {
             return
         }
 
-        // URL-based loading
+        // URL-based loading - not generated content
+        this._isGeneratedContent = false
+
         const texture = await this.textureLoader.load(source)
         this.card.setTexture('base', texture)
 
@@ -283,6 +287,9 @@ export class sticker {
             this.storedBrightnessMask = brightnessMask
             this.card.setTexture('effectMask', brightnessMask)
         }
+
+        // Update text overlays (collection name is overlay-based for URL content)
+        this.updateTextTextures()
     }
 
     /**
@@ -324,8 +331,11 @@ export class sticker {
      */
     async _generateAndCacheRandomContent(source, emoji = null) {
         const type = source === 'random-emoji' ? 'emoji' : 'geometric'
+        const defaultCollection = type === 'emoji' ? 'EMOJI' : 'GEOMETRY'
+        const collectionName = this.options.cardCollection || defaultCollection
+
         this.randomFactory = new RandomTextureFactory(this.gl)
-        const cardData = this.randomFactory.createRandomCard({ type, emoji })
+        const cardData = this.randomFactory.createRandomCard({ type, emoji, collectionName })
 
         this.card.setTexture('base', cardData.texture)
         this.storedNormalMap = null
@@ -336,6 +346,10 @@ export class sticker {
         this._isGeneratedContent = true
         this._cachedBaseImageUrl = cardData.canvas.toDataURL('image/png')
         this._generatedName = cardData.generatedName || ''
+        this._generatedCollection = defaultCollection
+
+        // Clear the collection overlay texture (collection name is baked into base)
+        this.updateTextTextures()
 
         // Auto-set card name if not already set
         if (this._generatedName && !this.options.cardName) {
@@ -369,6 +383,7 @@ export class sticker {
             this._cachedSourceType = source._cachedSourceType
             this._isGeneratedContent = source._isGeneratedContent
             this._generatedName = source._generatedName
+            this._generatedCollection = source._generatedCollection
         }
     }
 
@@ -384,6 +399,13 @@ export class sticker {
      */
     get generatedName() {
         return this._generatedName
+    }
+
+    /**
+     * Get the generated collection name (for random-emoji or random-geometric content)
+     */
+    get generatedCollection() {
+        return this._generatedCollection
     }
 
     /**
@@ -410,13 +432,21 @@ export class sticker {
 
     /**
      * Update text textures
+     * For generated content (random-emoji, random-geometric), the collection name
+     * is baked into the base texture, so we pass empty string for collection
+     * to avoid double-rendering.
      */
     updateTextTextures() {
         if (!this.textRenderer || !this.card) return
 
+        // For generated content, collection name is baked into base texture
+        // Pass empty string to create a blank collection overlay
+        const collectionForOverlay = this._isGeneratedContent ? '' : (this.options.cardCollection || '')
+
         this.textRenderer.createTextTextures(
             this.options.cardName || '',
             this.options.cardNumber || '',
+            collectionForOverlay,
             this.card
         )
     }
@@ -753,8 +783,14 @@ export class sticker {
     async setCardNormal(source) {
         if (this.options.cardNormal === source) return  // Skip if unchanged
         this.options.cardNormal = source
-        // Reload card source to apply new normal map
-        if (this.gl && this.card && this.options.cardSrc) {
+
+        // Only reload card source to apply new normal map if:
+        // 1. We have an active card to update
+        // 2. The card source is NOT a random/procedural source (they don't use normal maps)
+        // 3. We're setting a new normal map (not removing it)
+        // This prevents double-generation when switching to random sources
+        const isRandomSource = this.options.cardSrc?.startsWith('random-')
+        if (this.gl && this.card && this.options.cardSrc && !isRandomSource && source) {
             try {
                 await this.loadCardSource(this.options.cardSrc)
             } catch (err) {
@@ -782,6 +818,29 @@ export class sticker {
         if (this.options.cardNumber === number) return  // Skip if unchanged
         this.options.cardNumber = number
         this.updateTextTextures()
+    }
+
+    /**
+     * Set the card collection name
+     * @param {string} collection - Collection name text
+     */
+    setCardCollection(collection) {
+        if (this.options.cardCollection === collection) return  // Skip if unchanged
+        this.options.cardCollection = collection
+        // Collection name is baked into the texture for generated content
+        if (this._isGeneratedContent && this.gl && this.card) {
+            // Skip regeneration if setting to the already-generated collection name
+            // This prevents double-generation when syncing attributes after random generation
+            if (collection === this._generatedCollection) {
+                return
+            }
+            // Clear cache to force regeneration with new collection name
+            this._cachedBaseImageUrl = null
+            this.loadCardSource(this.options.cardSrc)
+        } else {
+            // For custom URL cards, update the text texture overlay
+            this.updateTextTextures()
+        }
     }
 
     /**
@@ -817,6 +876,9 @@ export class sticker {
                     break
                 case 'cardNumber':
                     this.setCardNumber(value)
+                    break
+                case 'cardCollection':
+                    this.setCardCollection(value)
                     break
                 case 'mask':
                     this.setMask(value)

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sticker Web Component Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         * {
             box-sizing: border-box;
@@ -255,6 +256,11 @@
                 </div>
 
                 <div class="control-group">
+                    <label for="card-collection">Collection Name</label>
+                    <input type="text" id="card-collection" value="">
+                </div>
+
+                <div class="control-group">
                     <label for="card-name">Card Name</label>
                     <input type="text" id="card-name" value="Link">
                 </div>
@@ -286,17 +292,38 @@
 <span class="code-tag">&lt;/script&gt;</span>
 
 <span class="code-comment">&lt;!-- Use the web component --&gt;</span>
-<span class="code-tag">&lt;sticker</span>
+<span class="code-tag">&lt;sticker-card</span>
   <span class="code-attr">shader</span>=<span class="code-string">"holographic"</span>
   <span class="code-attr">card-src</span>=<span class="code-string">"path/to/card.png"</span>
   <span class="code-attr">card-normal</span>=<span class="code-string">"path/to/normal.png"</span>
-  <span class="code-attr">card-name</span>=<span class="code-string">"Link"</span>
+  <span class="code-attr">card-name</span>=<span class="code-string">"Card"</span>
   <span class="code-attr">card-number</span>=<span class="code-string">"001/100"</span>
+  <span class="code-attr">card-collection</span>=<span class="code-string">"Collection"</span>
+  <span class="code-attr">mask</span>=<span class="code-string">"normal"</span>
   <span class="code-attr">interactive</span>
-<span class="code-tag">&gt;&lt;/sticker&gt;</span>
+<span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
 
 <span class="code-comment">&lt;!-- Lazy loading (for many cards) --&gt;</span>
-<span class="code-tag">&lt;sticker</span> <span class="code-attr">lazy</span> <span class="code-attr">shader</span>=<span class="code-string">"foil"</span> <span class="code-attr">card-src</span>=<span class="code-string">"random-emoji"</span><span class="code-tag">&gt;&lt;/sticker&gt;</span>
+<span class="code-tag">&lt;sticker-card</span>
+  <span class="code-attr">lazy</span>
+  <span class="code-attr">lazy-margin</span>=<span class="code-string">"200"</span>
+  <span class="code-attr">shader</span>=<span class="code-string">"foil"</span>
+  <span class="code-attr">card-src</span>=<span class="code-string">"random-emoji"</span>
+<span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- All available attributes --&gt;</span>
+<span class="code-comment">&lt;!-- shader: holographic|foil|parallax|galaxy|cracked-ice|refractor|starburst|prizm|etched|base --&gt;</span>
+<span class="code-comment">&lt;!-- card-src: URL or "random-emoji" or "random-geometric" --&gt;</span>
+<span class="code-comment">&lt;!-- card-normal: URL to normal map (optional) --&gt;</span>
+<span class="code-comment">&lt;!-- card-name: Display name on card --&gt;</span>
+<span class="code-comment">&lt;!-- card-number: Card number (e.g., "001/100") --&gt;</span>
+<span class="code-comment">&lt;!-- card-collection: Collection name --&gt;</span>
+<span class="code-comment">&lt;!-- mask: full|border|center|art-window|radial-edge|radial-center|normal|brightness --&gt;</span>
+<span class="code-comment">&lt;!-- interactive: Enable mouse/touch interaction (boolean) --&gt;</span>
+<span class="code-comment">&lt;!-- lazy: Defer WebGL init until hover (boolean) --&gt;</span>
+<span class="code-comment">&lt;!-- lazy-margin: Pixels before viewport to start rendering (default: 200) --&gt;</span>
+<span class="code-comment">&lt;!-- autoplay: Auto-start animation (default: true) --&gt;</span>
+<span class="code-comment">&lt;!-- bloom: Enable bloom effect (boolean) --&gt;</span>
 </code></pre>
     </div>
 
@@ -310,9 +337,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             const demoCard = document.getElementById('demo-card')
 
+            // Overlay state (declared early so event handlers can access)
+            const overlay = document.getElementById('overlay')
+            const overlayCardContainer = document.getElementById('overlay-card')
+            let currentOverlayCard = null
+            let currentSourceElement = null
+
             // Shader select
             document.getElementById('shader-select').addEventListener('change', (e) => {
                 demoCard.setAttribute('shader', e.target.value)
+                if (currentOverlayCard && currentSourceElement === demoCard) {
+                    currentOverlayCard.setAttribute('shader', e.target.value)
+                }
             })
 
             // URL input elements
@@ -347,6 +383,12 @@
                     } else {
                         demoCard.removeAttribute('card-normal')
                     }
+                    // Clear collection and reset card name to default for custom URLs
+                    document.getElementById('card-collection').value = ''
+                    demoCard.setAttribute('card-collection', '')
+                    document.getElementById('card-name').value = 'Link'
+                    demoCard.setAttribute('card-name', 'Link')
+                    demoCard.setAttribute('card-number', document.getElementById('card-number').value)
                 } else {
                     // random-emoji or random-geometric
                     demoCard.setAttribute('card-src', preset)
@@ -371,24 +413,40 @@
                 console.error('Card load error:', e.detail.error)
             })
 
-            // Update card name input when random content generates a name
-            function updateGeneratedName(e) {
+            // Update card name and collection when random content generates them
+            function updateGeneratedContent(e) {
                 // Only handle events from the demo card itself, not bubbled events
                 if (e.target !== demoCard) return
 
-                const generatedName = demoCard.generatedName
-                if (generatedName && srcSelect.value !== 'custom') {
-                    // Update both the input field AND the card attribute
-                    document.getElementById('card-name').value = generatedName
-                    demoCard.setAttribute('card-name', generatedName)
+                if (srcSelect.value !== 'custom') {
+                    const generatedName = demoCard.generatedName
+                    const generatedCollection = demoCard.generatedCollection
+
+                    if (generatedName) {
+                        document.getElementById('card-name').value = generatedName
+                        demoCard.setAttribute('card-name', generatedName)
+                    }
+                    if (generatedCollection) {
+                        document.getElementById('card-collection').value = generatedCollection
+                        demoCard.setAttribute('card-collection', generatedCollection)
+                    }
                 }
             }
-            demoCard.addEventListener('sticker:ready', updateGeneratedName)
-            demoCard.addEventListener('sticker:source-loaded', updateGeneratedName)
+            demoCard.addEventListener('sticker:ready', updateGeneratedContent)
+            demoCard.addEventListener('sticker:source-loaded', updateGeneratedContent)
 
             // Mask select
             document.getElementById('mask-select').addEventListener('change', (e) => {
                 demoCard.setAttribute('mask', e.target.value)
+                // Explicitly sync to overlay (MutationObserver backup)
+                if (currentOverlayCard && currentSourceElement === demoCard) {
+                    currentOverlayCard.setAttribute('mask', e.target.value)
+                }
+            })
+
+            // Card collection input
+            document.getElementById('card-collection').addEventListener('input', (e) => {
+                demoCard.setAttribute('card-collection', e.target.value)
             })
 
             // Card name input
@@ -402,11 +460,8 @@
             })
 
             // Overlay manager
-            const overlay = document.getElementById('overlay')
-            const overlayCard = document.getElementById('overlay-card')
-            let currentOverlayCard = null
-
             function openOverlay(config, sourceElement) {
+                currentSourceElement = sourceElement
                 overlay.classList.add('active')
                 const card = document.createElement('sticker-card')
                 card.setAttribute('shader', config.shader)
@@ -414,10 +469,19 @@
                 if (config.normal) {
                     card.setAttribute('card-normal', config.normal)
                 }
+                if (config.cardName) {
+                    card.setAttribute('card-name', config.cardName)
+                }
+                if (config.cardCollection) {
+                    card.setAttribute('card-collection', config.cardCollection)
+                }
+                if (config.mask) {
+                    card.setAttribute('mask', config.mask)
+                }
                 card.setAttribute('card-number', config.cardNumber)
                 card.setAttribute('interactive', '')
-                overlayCard.innerHTML = ''
-                overlayCard.appendChild(card)
+                overlayCardContainer.innerHTML = ''
+                overlayCardContainer.appendChild(card)
                 currentOverlayCard = card
                 // Copy content for random sources
                 if (sourceElement) {
@@ -431,10 +495,54 @@
                     currentOverlayCard.remove()
                     currentOverlayCard = null
                 }
+                currentSourceElement = null
             }
+
+            // Sync demo card changes to overlay when open
+            function syncToOverlay(attrName, value) {
+                if (!currentOverlayCard || currentSourceElement !== demoCard) return
+                if (value !== null && value !== undefined) {
+                    currentOverlayCard.setAttribute(attrName, value)
+                } else {
+                    currentOverlayCard.removeAttribute(attrName)
+                }
+                // For random sources, copy the generated content
+                if (attrName === 'card-src' && value?.startsWith('random-')) {
+                    // Wait for source to load then copy content
+                    setTimeout(() => {
+                        currentOverlayCard?.copyContentFrom(demoCard)
+                    }, 100)
+                }
+            }
+
+            // Watch for attribute changes on demo card
+            const demoCardObserver = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (mutation.type === 'attributes') {
+                        const value = demoCard.getAttribute(mutation.attributeName)
+                        syncToOverlay(mutation.attributeName, value)
+                    }
+                }
+            })
+            demoCardObserver.observe(demoCard, { attributes: true, attributeOldValue: true })
 
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) closeOverlay()
+            })
+
+            // Make demo card clickable to open in overlay
+            demoCard.style.cursor = 'pointer'
+            demoCard.addEventListener('click', () => {
+                const config = {
+                    shader: demoCard.getAttribute('shader'),
+                    src: demoCard.getAttribute('card-src'),
+                    normal: demoCard.getAttribute('card-normal'),
+                    cardName: demoCard.getAttribute('card-name'),
+                    cardNumber: demoCard.getAttribute('card-number'),
+                    cardCollection: demoCard.getAttribute('card-collection'),
+                    mask: demoCard.getAttribute('mask')
+                }
+                openOverlay(config, demoCard)
             })
 
             // Create lazy loading grid

@@ -28,7 +28,8 @@ export class RandomTextureFactory {
             geometricType = null,
             palette = null,
             noMask = false,
-            name = null
+            name = null,
+            collectionName = null
         } = options
 
         // Setup canvas with resolution scaling
@@ -43,14 +44,18 @@ export class RandomTextureFactory {
         // Draw background gradient
         this._drawBackground(ctx, width, height)
 
-        // Draw borders (include card name in texture if noMask)
-        const cardNameInTexture = noMask ? name : null
-        this._drawBorders(ctx, width, height, borderWidth * scale, borderOffset * scale, scale, cardNameInTexture)
-
         // Draw center content based on type
         const actualType = type === 'random'
             ? (Math.random() > 0.5 ? 'emoji' : 'geometric')
             : type
+
+        // Determine collection name (use provided or default based on type)
+        const defaultCollection = actualType === 'emoji' ? 'EMOJI' : 'GEOMETRY'
+        const finalCollectionName = collectionName || defaultCollection
+
+        // Draw borders (include card name in texture if noMask)
+        const cardNameInTexture = noMask ? name : null
+        this._drawBorders(ctx, width, height, borderWidth * scale, borderOffset * scale, scale, cardNameInTexture, finalCollectionName)
 
         let generatedName = ''
         if (actualType === 'emoji') {
@@ -113,7 +118,7 @@ export class RandomTextureFactory {
         ctx.fillRect(0, 0, width, height)
     }
 
-    _drawBorders(ctx, width, height, borderWidth, borderOffset, scale, cardName = null) {
+    _drawBorders(ctx, width, height, borderWidth, borderOffset, scale, cardName = null, collectionName = 'CARD') {
         // Outer border
         ctx.strokeStyle = '#4a4a8e'
         ctx.lineWidth = borderWidth
@@ -135,11 +140,11 @@ export class RandomTextureFactory {
             (height - 30 * scale) - innerOffset * 2
         )
 
-        // "CARD" text at top
+        // Collection name text at top
         ctx.fillStyle = '#ccccff'
         ctx.font = `bold ${14 * scale}px Arial`
         ctx.textAlign = 'left'
-        ctx.fillText('CARD', 10 * scale, 31 * scale)
+        ctx.fillText(collectionName, 10 * scale, 31 * scale)
 
         // Draw card name at bottom if provided (for noMask cards)
         if (cardName) {

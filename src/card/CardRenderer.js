@@ -9,7 +9,8 @@ const TEXTURE_BINDINGS = [
     { slot: 4, name: 'depth', uniform: 'u_depthMap' },
     { slot: 5, name: 'effectMask', uniform: 'u_effectMask' },
     { slot: 6, name: 'text', uniform: 'u_textTexture' },
-    { slot: 7, name: 'number', uniform: 'u_numberTexture' }
+    { slot: 7, name: 'number', uniform: 'u_numberTexture' },
+    { slot: 8, name: 'collection', uniform: 'u_collectionTexture' }
 ]
 
 export class CardRenderer {
