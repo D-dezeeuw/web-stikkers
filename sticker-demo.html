@@ -196,6 +196,7 @@
             <div class="card-container">
                 <sticker-card
                     id="demo-card"
+                    size="xl"
                     shader="holographic"
                     card-src="src/textures/zelda/visual.png"
                     card-normal="src/textures/zelda/normal.png"
@@ -464,6 +465,7 @@
                 currentSourceElement = sourceElement
                 overlay.classList.add('active')
                 const card = document.createElement('sticker-card')
+                card.setAttribute('size', 'xxl')
                 card.setAttribute('shader', config.shader)
                 card.setAttribute('card-src', config.src)
                 if (config.normal) {
@@ -562,6 +564,7 @@
                     normal: source.normal,
                     cardNumber: `${String(i + 1).padStart(3, '0')}/012`
                 }
+                card.setAttribute('size', 's')
                 card.setAttribute('lazy', '')
                 card.setAttribute('shader', config.shader)
                 card.setAttribute('card-src', config.src)

@@ -95,7 +95,7 @@ void main() {
 
     // Fresnel for edge glint
     float fresnel = 1.0 - max(dot(v_worldNormal, v_viewDirection), 0.0);
-    fresnel = pow(fresnel, 3.0);
+    fresnel = fresnel * fresnel * fresnel;
 
     // Metallic tint
     vec3 metalColor = vec3(1.0, 0.95, 0.88);

@@ -13,6 +13,20 @@ const TEXTURE_BINDINGS = [
     { slot: 8, name: 'collection', uniform: 'u_collectionTexture' }
 ]
 
+// Map of which textures each shader actually uses (for conditional binding)
+const SHADER_TEXTURES = {
+    'base': ['base', 'effectMask', 'text', 'number', 'collection'],
+    'holographic': ['base', 'rainbow', 'noise', 'effectMask', 'text', 'number', 'collection'],
+    'foil': ['base', 'noise', 'foil', 'effectMask', 'text', 'number', 'collection'],
+    'parallax': ['base', 'depth', 'effectMask', 'text', 'number', 'collection'],
+    'cracked-ice': ['base', 'rainbow', 'noise', 'effectMask', 'text', 'number', 'collection'],
+    'refractor': ['base', 'rainbow', 'noise', 'effectMask', 'text', 'number', 'collection'],
+    'galaxy': ['base', 'rainbow', 'effectMask', 'text', 'number', 'collection'],
+    'starburst': ['base', 'rainbow', 'noise', 'effectMask', 'text', 'number', 'collection'],
+    'prizm': ['base', 'rainbow', 'noise', 'effectMask', 'text', 'number', 'collection'],
+    'etched': ['base', 'rainbow', 'noise', 'depth', 'effectMask', 'text', 'number', 'collection']
+}
+
 export class CardRenderer {
     constructor(gl, geometry, shaderManager) {
         this.gl = gl
@@ -21,6 +35,10 @@ export class CardRenderer {
 
         this.viewMatrix = new Matrix4()
         this.projectionMatrix = new Matrix4()
+
+        // Texture binding cache to skip redundant gl.bindTexture calls
+        // Maps slot number to the currently bound texture object
+        this._boundTextures = new Map()
 
         // Target: card fills configured percent of canvas height
         // With card height 1.6, FOV 45°: Z = cardHeight / (fillPercent * 2 * tan(FOV/2))
@@ -90,11 +108,19 @@ export class CardRenderer {
         shader.setUniform1f('u_isBaseShader', effectSettings.isBaseShader ? 1.0 : 0.0)
         shader.setUniform1f('u_textOpacity', effectSettings.textOpacity ?? 0.2)
 
-        // Bind textures using configuration
+        // Bind only textures needed by the active shader
+        const shaderName = this.shaderManager.getActiveName()
+        const requiredTextures = SHADER_TEXTURES[shaderName] || TEXTURE_BINDINGS.map(b => b.name)
+
         for (const { slot, name, uniform } of TEXTURE_BINDINGS) {
+            if (!requiredTextures.includes(name)) continue
             const texture = card.getTexture(name)
             if (texture) {
-                texture.bind(slot)
+                // Only bind if texture changed for this slot (skip redundant GL calls)
+                if (this._boundTextures.get(slot) !== texture) {
+                    texture.bind(slot)
+                    this._boundTextures.set(slot, texture)
+                }
                 shader.setUniform1i(uniform, slot)
             }
         }
@@ -103,5 +129,13 @@ export class CardRenderer {
         this.geometry.bind()
         this.geometry.draw()
         this.geometry.unbind()
+    }
+
+    /**
+     * Clear the texture binding cache
+     * Call this when switching to a different card or when textures change
+     */
+    invalidateTextureCache() {
+        this._boundTextures.clear()
     }
 }

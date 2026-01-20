@@ -24,7 +24,7 @@ export class Texture {
         })
     }
 
-    createFromImage(image) {
+    createFromImage(image, generateMipmaps = false) {
         const gl = this.gl
 
         this.texture = gl.createTexture()
@@ -41,10 +41,14 @@ export class Texture {
 
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
 
-        gl.generateMipmap(gl.TEXTURE_2D)
+        if (generateMipmaps) {
+            gl.generateMipmap(gl.TEXTURE_2D)
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
+        } else {
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+        }
 
         this.width = image.width
         this.height = image.height

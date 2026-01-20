@@ -18,25 +18,29 @@ export class TextureLoader {
     /**
      * Load a texture from various source types
      * @param {string|HTMLImageElement|HTMLCanvasElement|ImageData} source
+     * @param {Object} options - Loading options
+     * @param {boolean} options.generateMipmaps - Whether to generate mipmaps (default: false for card textures)
      * @returns {Promise<Texture>}
      */
-    async load(source) {
+    async load(source, options = {}) {
+        const { generateMipmaps = false } = options
         const texture = new Texture(this.gl)
 
         if (typeof source === 'string') {
-            // URL string - load image
-            await texture.load(source)
+            // URL string - load image (uses custom loader to respect mipmap setting)
+            const image = await this._loadImageFromUrl(source)
+            texture.createFromImage(image, generateMipmaps)
         } else if (source instanceof HTMLImageElement) {
             // Image element
             if (source.complete && source.naturalWidth > 0) {
-                texture.createFromImage(source)
+                texture.createFromImage(source, generateMipmaps)
             } else {
                 await this.waitForImageLoad(source)
-                texture.createFromImage(source)
+                texture.createFromImage(source, generateMipmaps)
             }
         } else if (source instanceof HTMLCanvasElement) {
             // Canvas element - use directly
-            texture.createFromImage(source)
+            texture.createFromImage(source, generateMipmaps)
         } else if (source instanceof ImageData) {
             // ImageData - create from data
             texture.createFromData(
@@ -49,6 +53,21 @@ export class TextureLoader {
         }
 
         return texture
+    }
+
+    /**
+     * Load an image from URL
+     * @param {string} url - Image URL
+     * @returns {Promise<HTMLImageElement>}
+     */
+    _loadImageFromUrl(url) {
+        return new Promise((resolve, reject) => {
+            const image = new Image()
+            image.crossOrigin = 'anonymous'
+            image.onload = () => resolve(image)
+            image.onerror = () => reject(new Error(`Failed to load texture: ${url}`))
+            image.src = url
+        })
     }
 
     /**
@@ -88,9 +107,12 @@ export class TextureLoader {
      * @param {number} width
      * @param {number} height
      * @param {Function} drawFn - Function that receives (ctx, width, height)
+     * @param {Object} options - Options
+     * @param {boolean} options.generateMipmaps - Whether to generate mipmaps (default: false)
      * @returns {Texture}
      */
-    createFromCanvas(width, height, drawFn) {
+    createFromCanvas(width, height, drawFn, options = {}) {
+        const { generateMipmaps = false } = options
         const canvas = document.createElement('canvas')
         canvas.width = width
         canvas.height = height
@@ -99,7 +121,7 @@ export class TextureLoader {
         drawFn(ctx, width, height)
 
         const texture = new Texture(this.gl)
-        texture.createFromImage(canvas)
+        texture.createFromImage(canvas, generateMipmaps)
         return texture
     }
 

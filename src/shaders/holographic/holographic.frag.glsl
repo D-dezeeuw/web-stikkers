@@ -162,7 +162,7 @@ void main() {
     // === HIGHLIGHT BAND ===
     float highlightPos = u_cardRotation.y * 0.5 + 0.5;
     float highlight = 1.0 - abs(v_uv.x - highlightPos) * 2.0;
-    highlight = smoothstep(0.0, 1.0, highlight) * pow(lightAngle, 2.0) * 0.25;
+    highlight = smoothstep(0.0, 1.0, highlight) * (lightAngle * lightAngle) * 0.25;
 
     // === RIM LIGHTING ===
     vec3 rimColor = vec3(0.6, 0.8, 1.0);

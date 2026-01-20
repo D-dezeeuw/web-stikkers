@@ -29,11 +29,9 @@ const float MATTE_FACTOR = 0.55;
 const float METALLIC_SPEC_POWER = 64.0;
 const float EMBOSS_STRENGTH = 0.7;
 const float PATTERN_SCALE = 25.0;
-const float FRESNEL_POWER = 2.0;
-
 float calculateFresnel(vec3 normal, vec3 viewDir) {
     float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
-    return pow(fresnel, FRESNEL_POWER);
+    return fresnel * fresnel;  // FRESNEL_POWER = 2.0
 }
 
 // Minimum effect visibility (30%)

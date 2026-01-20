@@ -15,6 +15,10 @@ export class CardController {
         this.idleSpeed = CONFIG.idle.speed
         this.idleAmount = CONFIG.idle.amplitude
 
+        // Cached bounding rect (updated on resize/enter, not every mouse move)
+        this._cachedRect = null
+        this._resizeObserver = null
+
         // Bind methods for proper event listener removal
         this.handleMouseMove = this.onMouseMove.bind(this)
         this.handleMouseLeave = this.onMouseLeave.bind(this)
@@ -22,11 +26,40 @@ export class CardController {
         this.handleTouchMove = this.onTouchMove.bind(this)
 
         this.bindEvents()
+        this._setupResizeObserver()
 
         // Check if mouse is already over canvas (e.g., overlay opened under cursor)
         if (this.canvas.matches(':hover')) {
             this.isHovering = true
+            this._updateCachedRect()
         }
+    }
+
+    /**
+     * Setup ResizeObserver to invalidate cached rect when canvas resizes
+     */
+    _setupResizeObserver() {
+        this._resizeObserver = new ResizeObserver(() => {
+            this._cachedRect = null  // Invalidate cache on resize
+        })
+        this._resizeObserver.observe(this.canvas)
+    }
+
+    /**
+     * Update the cached bounding rect
+     */
+    _updateCachedRect() {
+        this._cachedRect = this.canvas.getBoundingClientRect()
+    }
+
+    /**
+     * Get the cached rect, updating if necessary
+     */
+    _getRect() {
+        if (!this._cachedRect) {
+            this._updateCachedRect()
+        }
+        return this._cachedRect
     }
 
     update(deltaTime) {
@@ -51,7 +84,7 @@ export class CardController {
     }
 
     onMouseMove(event) {
-        const rect = this.canvas.getBoundingClientRect()
+        const rect = this._getRect()
 
         // Calculate mouse position relative to canvas center, normalized to -1 to 1
         this.mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1
@@ -63,7 +96,7 @@ export class CardController {
     onTouchMove(event) {
         event.preventDefault()
         const touch = event.touches[0]
-        const rect = this.canvas.getBoundingClientRect()
+        const rect = this._getRect()
 
         this.mouseX = ((touch.clientX - rect.left) / rect.width) * 2 - 1
         this.mouseY = ((touch.clientY - rect.top) / rect.height) * 2 - 1
@@ -73,6 +106,8 @@ export class CardController {
 
     onMouseEnter() {
         this.isHovering = true
+        // Refresh cached rect on mouse enter (handles scroll/layout changes)
+        this._updateCachedRect()
     }
 
     onMouseLeave() {
@@ -102,5 +137,12 @@ export class CardController {
         this.canvas.removeEventListener('mouseenter', this.handleMouseEnter)
         this.canvas.removeEventListener('touchmove', this.handleTouchMove)
         this.canvas.removeEventListener('touchend', this.handleMouseLeave)
+
+        // Clean up ResizeObserver
+        if (this._resizeObserver) {
+            this._resizeObserver.disconnect()
+            this._resizeObserver = null
+        }
+        this._cachedRect = null
     }
 }

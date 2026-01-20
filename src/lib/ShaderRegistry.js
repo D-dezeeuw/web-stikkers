@@ -276,7 +276,7 @@ void main() {
     // === HIGHLIGHT BAND ===
     float highlightPos = u_cardRotation.y * 0.5 + 0.5;
     float highlight = 1.0 - abs(v_uv.x - highlightPos) * 2.0;
-    highlight = smoothstep(0.0, 1.0, highlight) * pow(lightAngle, 2.0) * 0.25;
+    highlight = smoothstep(0.0, 1.0, highlight) * (lightAngle * lightAngle) * 0.25;
 
     // === RIM LIGHTING ===
     vec3 rimColor = vec3(0.6, 0.8, 1.0);
@@ -421,7 +421,7 @@ void main() {
 
     // Fresnel for edge glint
     float fresnel = 1.0 - max(dot(v_worldNormal, v_viewDirection), 0.0);
-    fresnel = pow(fresnel, 3.0);
+    fresnel = fresnel * fresnel * fresnel;
 
     // Metallic tint
     vec3 metalColor = vec3(1.0, 0.95, 0.88);
@@ -1645,11 +1645,9 @@ const float MATTE_FACTOR = 0.55;
 const float METALLIC_SPEC_POWER = 64.0;
 const float EMBOSS_STRENGTH = 0.7;
 const float PATTERN_SCALE = 25.0;
-const float FRESNEL_POWER = 2.0;
-
 float calculateFresnel(vec3 normal, vec3 viewDir) {
     float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
-    return pow(fresnel, FRESNEL_POWER);
+    return fresnel * fresnel;  // FRESNEL_POWER = 2.0
 }
 
 // Minimum effect visibility (30%)

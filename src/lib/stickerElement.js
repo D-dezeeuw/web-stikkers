@@ -31,33 +31,36 @@ function scheduleProcessing() {
     })
 }
 
+// Number of cards to render in parallel per frame
+// Matches pool size to maximize throughput without over-committing
+const PARALLEL_BATCH_SIZE = 3
+
 async function processRenderQueue() {
     if (isProcessingQueue || renderQueue.length === 0) return
 
     isProcessingQueue = true
 
-    // Pre-compute bounding rects once (avoid repeated DOM queries during sort)
-    for (const item of renderQueue) {
-        item.rect = item.element.getBoundingClientRect()
-    }
-
-    // Sort queue by DOM position (top to bottom, left to right)
+    // Sort queue by DOM order without triggering layout
+    // Uses compareDocumentPosition which doesn't require getBoundingClientRect
     renderQueue.sort((a, b) => {
-        // Primary sort by vertical position, secondary by horizontal
-        if (Math.abs(a.rect.top - b.rect.top) > 10) {
-            return a.rect.top - b.rect.top
-        }
-        return a.rect.left - b.rect.left
+        const position = a.element.compareDocumentPosition(b.element)
+        // DOCUMENT_POSITION_FOLLOWING means b comes after a
+        return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
     })
 
     while (renderQueue.length > 0) {
-        const { element, resolve } = renderQueue.shift()
-        try {
-            await element._doRenderStaticFrame()
-        } catch (err) {
-            console.error('Failed to render static frame:', err)
-        }
-        resolve()
+        // Take a batch of cards to render in parallel
+        const batch = renderQueue.splice(0, Math.min(PARALLEL_BATCH_SIZE, renderQueue.length))
+
+        // Render all cards in batch simultaneously
+        await Promise.all(batch.map(async ({ element, resolve }) => {
+            try {
+                await element._doRenderStaticFrame()
+            } catch (err) {
+                console.error('Failed to render static frame:', err)
+            }
+            resolve()
+        }))
     }
 
     isProcessingQueue = false
@@ -118,7 +121,8 @@ const ATTR_TO_OPTION = {
     'bloom': 'bloom',
     'interactive': 'interactive',
     'lazy': 'lazy',
-    'autoplay': 'autoplay'
+    'autoplay': 'autoplay',
+    'size': 'size'
 }
 
 // Attributes that don't map to sticker options (handled separately)
@@ -603,6 +607,20 @@ export class stickerElement extends HTMLElement {
      */
     static get builtinSources() {
         return sticker.builtinSources
+    }
+
+    /**
+     * Available size presets
+     */
+    static get sizePresets() {
+        return sticker.sizePresets
+    }
+
+    /**
+     * Available size names
+     */
+    static get sizeNames() {
+        return sticker.sizeNames
     }
 }
 

@@ -21,6 +21,7 @@ import { TextRenderer } from '../factories/TextRenderer.js'
 import { TextureLoader } from './TextureLoader.js'
 import { WebGLContextPool } from './WebGLContextPool.js'
 import * as ShaderRegistry from './ShaderRegistry.js'
+import { CONFIG } from '../config.js'
 
 // Mask factory map
 const MASK_FACTORIES = {
@@ -34,6 +35,23 @@ const MASK_FACTORIES = {
 
 // Built-in card sources (procedural generators only)
 const BUILTIN_SOURCES = ['random-emoji', 'random-geometric']
+
+/**
+ * Size presets for sticker rendering resolution
+ * Maps size name to resolution scale factor
+ * Base resolution is 400×640 (5:8 aspect ratio)
+ */
+const SIZE_PRESETS = {
+    'xs': { scale: 0.25, width: 100, height: 160 },    // Tiny thumbnails
+    's': { scale: 0.375, width: 150, height: 240 },    // Small cards
+    'm': { scale: 0.5, width: 200, height: 320 },      // Medium cards (default)
+    'l': { scale: 0.75, width: 300, height: 480 },     // Large cards
+    'xl': { scale: 1.0, width: 400, height: 640 },     // Full quality
+    'xxl': { scale: 'auto', width: null, height: null } // Auto: container size × DPR
+}
+
+// Default size preset
+const DEFAULT_SIZE = 'm'
 
 /**
  * Default options for sticker
@@ -56,7 +74,10 @@ const DEFAULT_OPTIONS = {
     // Behavior
     interactive: true,
     lazy: false,
-    autoplay: true
+    autoplay: true,
+
+    // Resolution - defaults to 'm' (200×320)
+    size: DEFAULT_SIZE
 }
 
 export class sticker {
@@ -112,6 +133,7 @@ export class sticker {
 
         // Static image for lazy mode
         this.staticImage = null
+        this._snapshotBlobUrl = null  // Track blob URL for cleanup
 
         // Lazy mode target element (for listener cleanup)
         this._lazyTarget = null
@@ -135,16 +157,30 @@ export class sticker {
         this.isInitializing = true
 
         try {
-            // Get size from canvas or parent
-            const parent = this.canvas.parentElement
-            const rect = parent?.getBoundingClientRect() || { width: 200, height: 320 }
-            const width = rect.width || 200
-            const height = rect.height || 320
-            const dpr = window.devicePixelRatio || 1
+            // Determine render resolution based on size preset
+            let renderWidth, renderHeight
+
+            const sizeKey = (this.options.size || DEFAULT_SIZE).toLowerCase()
+            const preset = SIZE_PRESETS[sizeKey]
+
+            if (preset && preset.scale !== 'auto') {
+                // Fixed preset resolution (ignores DPR for consistent performance)
+                renderWidth = preset.width
+                renderHeight = preset.height
+            } else {
+                // XXL / Auto mode: use container size with DPR
+                const parent = this.canvas.parentElement
+                const rect = parent?.getBoundingClientRect() || { width: 200, height: 320 }
+                const width = rect.width || 200
+                const height = rect.height || 320
+                const dpr = window.devicePixelRatio || 1
+                renderWidth = width * dpr
+                renderHeight = height * dpr
+            }
 
             // Set target canvas size (2D canvas for display)
-            this.canvas.width = width * dpr
-            this.canvas.height = height * dpr
+            this.canvas.width = renderWidth
+            this.canvas.height = renderHeight
 
             // Ensure canvas is in a valid state
             if (!this.canvas) {
@@ -463,6 +499,16 @@ export class sticker {
             const { width, height } = entries[0].contentRect
             if (width === 0 || height === 0) return
 
+            const sizeKey = (this.options.size || DEFAULT_SIZE).toLowerCase()
+            const preset = SIZE_PRESETS[sizeKey]
+
+            // For fixed presets (not xxl/auto), only update aspect ratio
+            if (preset && preset.scale !== 'auto') {
+                this.renderer.updateProjection(width / height)
+                return
+            }
+
+            // XXL/Auto mode: resize canvas with DPR
             const dpr = window.devicePixelRatio || 1
             this.canvas.width = width * dpr
             this.canvas.height = height * dpr
@@ -511,7 +557,7 @@ export class sticker {
             this._isStaticRender = false
 
             // Capture snapshot (only capture point - not re-captured on deactivate)
-            this.captureSnapshot()
+            await this.captureSnapshot()
         } finally {
             // Cleanup
             this.isActive = false
@@ -520,15 +566,103 @@ export class sticker {
     }
 
     /**
-     * Capture current canvas to static image
+     * Capture current canvas to static image (async for performance)
+     * Crops to card bounds and uses JPEG for faster encoding (no transparency needed)
      */
-    captureSnapshot() {
+    async captureSnapshot() {
         if (!this.staticImage) return
 
-        // Capture from target canvas (which has the rendered frame copied to it)
-        this.staticImage.src = this.canvas.toDataURL('image/png')
-        this.staticImage.style.display = 'block'
-        this.canvas.style.display = 'none'
+        // Revoke previous blob URL to prevent memory leak
+        if (this._snapshotBlobUrl) {
+            URL.revokeObjectURL(this._snapshotBlobUrl)
+            this._snapshotBlobUrl = null
+        }
+
+        try {
+            // Calculate card bounds in pixel coordinates
+            // Card fills 85% of canvas height, centered, with 5:8 aspect ratio
+            const fillPercent = CONFIG.card.viewportFillPercent
+            const cardAspect = CONFIG.card.aspectRatio  // 5/8 = 0.625
+
+            const cardPixelHeight = Math.round(this.canvas.height * fillPercent)
+            const cardPixelWidth = Math.round(cardPixelHeight * cardAspect)
+
+            // Card is centered in canvas
+            const cardLeft = Math.round((this.canvas.width - cardPixelWidth) / 2)
+            const cardTop = Math.round((this.canvas.height - cardPixelHeight) / 2)
+
+            // Create a temporary canvas for the cropped card
+            const cropCanvas = document.createElement('canvas')
+            cropCanvas.width = cardPixelWidth
+            cropCanvas.height = cardPixelHeight
+            const cropCtx = cropCanvas.getContext('2d')
+
+            // Copy just the card region from the main canvas
+            cropCtx.drawImage(
+                this.canvas,
+                cardLeft, cardTop, cardPixelWidth, cardPixelHeight,  // source rect
+                0, 0, cardPixelWidth, cardPixelHeight                 // dest rect
+            )
+
+            // Encode as JPEG (faster than PNG, smaller size, no transparency needed)
+            const blob = await this._canvasToBlob(cropCanvas, 'image/jpeg', 0.92)
+            this._snapshotBlobUrl = URL.createObjectURL(blob)
+            this.staticImage.src = this._snapshotBlobUrl
+            this.staticImage.style.display = 'block'
+            this.canvas.style.display = 'none'
+
+            // Adjust static image positioning to account for cropping
+            // The image needs to be positioned where the card was in the original canvas
+            const leftPercent = (cardLeft / this.canvas.width) * 100
+            const topPercent = (cardTop / this.canvas.height) * 100
+            const widthPercent = (cardPixelWidth / this.canvas.width) * 100
+            const heightPercent = (cardPixelHeight / this.canvas.height) * 100
+
+            this.staticImage.style.left = `${leftPercent}%`
+            this.staticImage.style.top = `${topPercent}%`
+            this.staticImage.style.width = `${widthPercent}%`
+            this.staticImage.style.height = `${heightPercent}%`
+        } catch (err) {
+            // Fallback to full canvas PNG if cropping fails
+            console.warn('Cropped JPEG capture failed, falling back to full PNG:', err.message)
+            const blob = await this._canvasToBlob(this.canvas, 'image/png').catch(() => null)
+            if (blob) {
+                this._snapshotBlobUrl = URL.createObjectURL(blob)
+                this.staticImage.src = this._snapshotBlobUrl
+            } else {
+                this.staticImage.src = this.canvas.toDataURL('image/png')
+            }
+            // Reset positioning for full canvas fallback
+            this.staticImage.style.left = '0'
+            this.staticImage.style.top = '0'
+            this.staticImage.style.width = '100%'
+            this.staticImage.style.height = '100%'
+            this.staticImage.style.display = 'block'
+            this.canvas.style.display = 'none'
+        }
+    }
+
+    /**
+     * Promise wrapper for canvas.toBlob()
+     * @param {HTMLCanvasElement} canvas
+     * @param {string} type - MIME type (image/jpeg, image/png, image/webp)
+     * @param {number} quality - Quality for lossy formats (0-1)
+     * @returns {Promise<Blob>}
+     */
+    _canvasToBlob(canvas, type = 'image/jpeg', quality = 0.85) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob(
+                (blob) => {
+                    if (blob) {
+                        resolve(blob)
+                    } else {
+                        reject(new Error('toBlob returned null'))
+                    }
+                },
+                type,
+                quality
+            )
+        })
     }
 
     /**
@@ -632,7 +766,7 @@ export class sticker {
         const offscreenCanvas = this._borrowedContext.canvas
         gl.bindFramebuffer(gl.FRAMEBUFFER, null)
         gl.viewport(0, 0, offscreenCanvas.width, offscreenCanvas.height)
-        gl.clearColor(0.1, 0.1, 0.15, 1.0)
+        gl.clearColor(0, 0, 0, 0)  // Transparent background
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         gl.disable(gl.BLEND)
 
@@ -651,6 +785,8 @@ export class sticker {
         if (!this._borrowedContext || !this._targetCtx) return
 
         const offscreenCanvas = this._borrowedContext.canvas
+        // Clear target canvas for proper transparency
+        this._targetCtx.clearRect(0, 0, this.canvas.width, this.canvas.height)
         this._targetCtx.drawImage(offscreenCanvas, 0, 0, this.canvas.width, this.canvas.height)
     }
 
@@ -702,6 +838,12 @@ export class sticker {
      */
     destroy() {
         this.stop()
+
+        // Revoke snapshot blob URL to prevent memory leak
+        if (this._snapshotBlobUrl) {
+            URL.revokeObjectURL(this._snapshotBlobUrl)
+            this._snapshotBlobUrl = null
+        }
 
         // Remove lazy mode event listeners - CRITICAL to prevent context leaks
         if (this._lazyTarget) {
@@ -889,8 +1031,29 @@ export class sticker {
                 case 'autoplay':
                     this.options[key] = value
                     break
+                case 'size':
+                    this.setSize(value)
+                    break
             }
         }
+    }
+
+    /**
+     * Set the render size preset
+     * @param {string} size - Size preset ('xs'|'s'|'m'|'l'|'xl'|'xxl')
+     */
+    setSize(size) {
+        const normalizedSize = (size || DEFAULT_SIZE).toLowerCase()
+        if (this.options.size === normalizedSize) return  // Skip if unchanged
+
+        // Validate size preset
+        if (!SIZE_PRESETS[normalizedSize]) {
+            console.warn(`sticker: Unknown size preset '${size}'. Valid sizes: xs, s, m, l, xl, xxl`)
+            return
+        }
+
+        this.options.size = normalizedSize
+        // Note: Size changes take effect on next init (resize during render not supported)
     }
 
     // ==================== Static ====================
@@ -914,6 +1077,20 @@ export class sticker {
      */
     static get builtinSources() {
         return BUILTIN_SOURCES
+    }
+
+    /**
+     * Get available size presets
+     */
+    static get sizePresets() {
+        return { ...SIZE_PRESETS }
+    }
+
+    /**
+     * Get list of valid size names
+     */
+    static get sizeNames() {
+        return Object.keys(SIZE_PRESETS)
     }
 
     /**

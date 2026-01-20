@@ -48,8 +48,9 @@ class OverlayManager {
         // Show overlay
         this.overlay.classList.add('active')
 
-        // Create sticker element for overlay (not lazy, autoplay)
+        // Create sticker element for overlay (not lazy, autoplay, XXL for max quality)
         const sticker = document.createElement('sticker-card')
+        sticker.setAttribute('size', 'xxl')
         sticker.setAttribute('shader', cardConfig.shader)
         sticker.setAttribute('card-src', cardConfig.cardSrc)
         sticker.setAttribute('card-number', cardConfig.cardNumber)
@@ -115,6 +116,7 @@ function createCardConfig(index, totalCards) {
  */
 function createstickerElement(config) {
     const sticker = document.createElement('sticker-card')
+    sticker.setAttribute('size', 's')
     sticker.setAttribute('lazy', '')
     sticker.setAttribute('shader', config.shader)
     sticker.setAttribute('card-src', config.cardSrc)

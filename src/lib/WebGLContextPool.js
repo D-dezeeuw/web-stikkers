@@ -16,7 +16,8 @@
 import { PooledRenderContext } from './PooledRenderContext.js'
 
 // Default pool configuration
-const DEFAULT_POOL_SIZE = 6
+// Note: Most browsers limit active WebGL contexts. 5 is a safe default.
+const DEFAULT_POOL_SIZE = 5
 const DEFAULT_WIDTH = 400
 const DEFAULT_HEIGHT = 640
 
@@ -85,7 +86,6 @@ class WebGLContextPool {
         }
 
         this.isInitialized = true
-        console.log(`WebGLContextPool: Initialized with ${this.pool.length} contexts`)
     }
 
     /**

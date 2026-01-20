@@ -64,9 +64,9 @@ export class RandomTextureFactory {
             generatedName = this._drawGeometric(ctx, width, height, scale, geometricType, palette)
         }
 
-        // Create texture from canvas
+        // Create texture from canvas (skip mipmaps - card textures don't zoom out)
         const texture = new Texture(this.gl)
-        texture.createFromImage(canvas)
+        texture.createFromImage(canvas, false)
 
         // Create brightness mask for effects
         const brightnessMask = createTextureBrightnessMask(this.gl, canvas)

@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Size Presets Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: #fff;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #8b8b9a;
+        }
+
+        h2 {
+            margin: 2rem 0 1rem;
+            font-size: 1.25rem;
+            color: #a0a0b0;
+        }
+
+        /* Demo sections */
+        .demo-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Size comparison grid */
+        .size-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .size-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .size-label {
+            font-size: 0.875rem;
+            color: #a0a0b0;
+            text-align: center;
+        }
+
+        .size-label strong {
+            color: #fff;
+            font-size: 1.25rem;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .size-label code {
+            background: rgba(0,0,0,0.3);
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Card containers with fixed CSS sizes */
+        .card-xs { width: 100px; }
+        .card-s { width: 150px; }
+        .card-m { width: 200px; }
+        .card-l { width: 300px; }
+        .card-xl { width: 400px; }
+
+        /* Stats display */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .stat-card {
+            background: rgba(0,0,0,0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #6366f1;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #8b8b9a;
+            margin-top: 0.25rem;
+        }
+
+        /* Performance comparison */
+        .perf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .perf-table th,
+        .perf-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .perf-table th {
+            color: #a0a0b0;
+            font-weight: 500;
+        }
+
+        .perf-table td:first-child {
+            font-weight: bold;
+        }
+
+        .perf-bar {
+            height: 8px;
+            background: #6366f1;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .perf-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        /* Lazy grid demo */
+        .lazy-grid-container {
+            max-height: 350px;
+            overflow-y: auto;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            padding: 0.75rem;
+        }
+
+        .lazy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .lazy-grid sticker-card {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* Size slider controls */
+        .slider-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .slider-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #a0a0b0;
+            font-size: 0.875rem;
+        }
+
+        .size-slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.1);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+
+        .size-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #6366f1;
+            cursor: pointer;
+            border: 2px solid #fff;
+        }
+
+        .size-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b6b7a;
+        }
+
+        .size-labels span {
+            cursor: pointer;
+            padding: 0.25rem;
+            transition: color 0.2s;
+        }
+
+        .size-labels span:hover {
+            color: #a0a0b0;
+        }
+
+        .size-labels span.active {
+            color: #6366f1;
+            font-weight: bold;
+        }
+
+        .current-size-display {
+            background: #6366f1;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .current-size-display small {
+            display: block;
+            font-weight: normal;
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        /* Code example */
+        pre {
+            background: #0d0d1a;
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        code {
+            color: #a5d6ff;
+        }
+
+        .code-comment { color: #6e7681; }
+        .code-string { color: #a5d6ff; }
+        .code-tag { color: #7ee787; }
+        .code-attr { color: #79c0ff; }
+
+        /* Overlay */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+        }
+        .overlay.active {
+            display: flex;
+        }
+        .overlay-card {
+            height: 85vh;
+            aspect-ratio: 5/8;
+        }
+        .overlay-card sticker-card {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Info callout */
+        .info {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 4px solid #6366f1;
+            padding: 1rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        .info-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for expanded card view -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-card" id="overlay-card"></div>
+    </div>
+
+    <h1>Size Presets Demo</h1>
+    <p class="subtitle">Control render resolution independently from display size</p>
+
+    <!-- Size comparison -->
+    <div class="demo-section">
+        <h2>Size Comparison (All at Native Display Size)</h2>
+        <p style="color: #8b8b9a; margin-bottom: 1.5rem;">
+            Each card is displayed at its native render resolution. Notice how smaller presets render faster but with less detail.
+        </p>
+        <div class="size-grid">
+            <div class="size-item">
+                <div class="card-xs">
+                    <sticker-card
+                        size="xs"
+                        shader="holographic"
+                        card-src="random-emoji"
+                        card-number="XS"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>XS</strong>
+                    <code>100 × 160</code>
+                </div>
+            </div>
+            <div class="size-item">
+                <div class="card-s">
+                    <sticker-card
+                        size="s"
+                        shader="holographic"
+                        card-src="random-emoji"
+                        card-number="S"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>S</strong>
+                    <code>150 × 240</code>
+                </div>
+            </div>
+            <div class="size-item">
+                <div class="card-m">
+                    <sticker-card
+                        size="m"
+                        shader="holographic"
+                        card-src="random-emoji"
+                        card-number="M"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>M</strong>
+                    <code>200 × 320</code>
+                </div>
+            </div>
+            <div class="size-item">
+                <div class="card-l">
+                    <sticker-card
+                        size="l"
+                        shader="holographic"
+                        card-src="random-emoji"
+                        card-number="L"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>L</strong>
+                    <code>300 × 480</code>
+                </div>
+            </div>
+            <div class="size-item">
+                <div class="card-xl">
+                    <sticker-card
+                        size="xl"
+                        shader="holographic"
+                        card-src="random-emoji"
+                        card-number="XL"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>XL</strong>
+                    <code>400 × 640</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance stats -->
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="pixel-ratio">-</div>
+                <div class="stat-label">XL vs XS Pixel Ratio</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="memory-savings">-</div>
+                <div class="stat-label">Memory Savings (XS vs XL)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="active-contexts">-</div>
+                <div class="stat-label">Active WebGL Contexts</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Same display size, different render quality -->
+    <div class="demo-section">
+        <h2>Same Display Size, Different Render Quality</h2>
+        <p style="color: #8b8b9a; margin-bottom: 1.5rem;">
+            All cards displayed at 200px wide, but rendered at different internal resolutions.
+            Lower presets are faster but may appear slightly softer when upscaled.
+        </p>
+        <div class="size-grid">
+            <div class="size-item">
+                <div style="width: 200px;">
+                    <sticker-card
+                        size="xs"
+                        shader="foil"
+                        card-src="random-geometric"
+                        card-number="XS→200px"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>XS</strong>
+                    Upscaled 2×
+                </div>
+            </div>
+            <div class="size-item">
+                <div style="width: 200px;">
+                    <sticker-card
+                        size="s"
+                        shader="foil"
+                        card-src="random-geometric"
+                        card-number="S→200px"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>S</strong>
+                    Upscaled 1.33×
+                </div>
+            </div>
+            <div class="size-item">
+                <div style="width: 200px;">
+                    <sticker-card
+                        size="m"
+                        shader="foil"
+                        card-src="random-geometric"
+                        card-number="M→200px"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>M</strong>
+                    Native 1:1
+                </div>
+            </div>
+            <div class="size-item">
+                <div style="width: 200px;">
+                    <sticker-card
+                        size="l"
+                        shader="foil"
+                        card-src="random-geometric"
+                        card-number="L→200px"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>L</strong>
+                    Downscaled 0.67×
+                </div>
+            </div>
+            <div class="size-item">
+                <div style="width: 200px;">
+                    <sticker-card
+                        size="xl"
+                        shader="foil"
+                        card-src="random-geometric"
+                        card-number="XL→200px"
+                        lazy
+                        interactive
+                    ></sticker-card>
+                </div>
+                <div class="size-label">
+                    <strong>XL</strong>
+                    Downscaled 0.5×
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <div class="info-title">Default Size: M</div>
+            Cards now default to <code>size="m"</code> (200×320) which provides good quality at reasonable GPU cost.
+            Use <code>size="s"</code> or <code>size="xs"</code> for thumbnail grids with many cards.
+            Use <code>size="xxl"</code> for maximum quality when you need container × DPR resolution.
+        </div>
+    </div>
+
+    <!-- Performance table -->
+    <div class="demo-section">
+        <h2>Performance Characteristics</h2>
+        <table class="perf-table">
+            <thead>
+                <tr>
+                    <th>Size</th>
+                    <th>Resolution</th>
+                    <th>Pixels</th>
+                    <th>Relative GPU Load</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>XS</td>
+                    <td>100 × 160</td>
+                    <td>16,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 6.25%"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>S</td>
+                    <td>150 × 240</td>
+                    <td>36,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 14%"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td><strong>M (default)</strong></td>
+                    <td>200 × 320</td>
+                    <td>64,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 25%"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>L</td>
+                    <td>300 × 480</td>
+                    <td>144,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 56.25%"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>XL</td>
+                    <td>400 × 640</td>
+                    <td>256,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 100%"></div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>XXL (Auto)</td>
+                    <td>Container × DPR</td>
+                    <td>~1,024,000</td>
+                    <td>
+                        <div class="perf-bar-container">
+                            <div class="perf-bar" style="width: 100%; background: #f59e0b"></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Lazy loading with size slider -->
+    <div class="demo-section">
+        <h2>Interactive Size Comparison (100 Cards)</h2>
+        <p style="color: #8b8b9a; margin-bottom: 0.5rem;">
+            Drag the slider to change render quality. Idle cards show a static image — <strong>hover to see WebGL render</strong> at the selected resolution.
+        </p>
+        <p style="color: #6366f1; margin-bottom: 1rem; font-size: 0.9rem;" id="perf-description">
+            <strong>XS: 16K pixels</strong> — 64× fewer pixels than XXL during hover and preview generation.
+        </p>
+
+        <div class="slider-controls">
+            <div class="slider-group">
+                <label>Render Size Preset</label>
+                <input type="range" class="size-slider" id="size-slider" min="0" max="5" value="0" step="1">
+                <div class="size-labels" id="size-labels">
+                    <span data-value="0" class="active">XS</span>
+                    <span data-value="1">S</span>
+                    <span data-value="2">M</span>
+                    <span data-value="3">L</span>
+                    <span data-value="4">XL</span>
+                    <span data-value="5">XXL</span>
+                </div>
+            </div>
+            <div class="current-size-display" id="size-display">
+                XS
+                <small>100 × 160</small>
+            </div>
+        </div>
+
+        <div class="lazy-grid-container">
+            <div class="lazy-grid" id="lazy-grid"></div>
+        </div>
+    </div>
+
+    <!-- Usage -->
+    <div class="demo-section">
+        <h2>Usage</h2>
+        <pre><code><span class="code-comment">&lt;!-- Tiny thumbnails - fastest, for grids with many cards --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"xs"</span> <span class="code-attr">lazy</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- Small - good balance for thumbnail grids --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"s"</span> <span class="code-attr">lazy</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- Medium (DEFAULT) - good quality, reasonable performance --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"m"</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- Large - high quality for featured cards --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"l"</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- XL - maximum fixed quality for hero/overlay display --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"xl"</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- XXL - uses container size × devicePixelRatio (highest quality, expensive) --&gt;</span>
+<span class="code-tag">&lt;sticker-card</span> <span class="code-attr">size</span>=<span class="code-string">"xxl"</span> <span class="code-attr">card-src</span>=<span class="code-string">"..."</span><span class="code-tag">&gt;&lt;/sticker-card&gt;</span>
+
+<span class="code-comment">&lt;!-- Access presets programmatically --&gt;</span>
+<span class="code-tag">&lt;script&gt;</span>
+  console.log(stickerElement.sizePresets)
+  // { xs: {...}, s: {...}, m: {...}, l: {...}, xl: {...}, xxl: {scale: 'auto', ...} }
+
+  console.log(stickerElement.sizeNames)
+  // ['xs', 's', 'm', 'l', 'xl', 'xxl']
+<span class="code-tag">&lt;/script&gt;</span>
+</code></pre>
+    </div>
+
+    <script type="module">
+        import { sticker, stickerElement, registerstickerElement } from './src/index.js'
+
+        // Register the web component
+        registerstickerElement()
+
+        // Overlay manager
+        const overlay = document.getElementById('overlay')
+        const overlayCardContainer = document.getElementById('overlay-card')
+        let currentOverlayCard = null
+
+        function openOverlay(sourceCard) {
+            overlay.classList.add('active')
+
+            // Create overlay card with same attributes but XXL size for max quality
+            const card = document.createElement('sticker-card')
+            card.setAttribute('size', 'xxl')
+            card.setAttribute('shader', sourceCard.getAttribute('shader') || 'holographic')
+            card.setAttribute('card-src', sourceCard.getAttribute('card-src') || '')
+            if (sourceCard.getAttribute('card-normal')) {
+                card.setAttribute('card-normal', sourceCard.getAttribute('card-normal'))
+            }
+            if (sourceCard.getAttribute('card-name')) {
+                card.setAttribute('card-name', sourceCard.getAttribute('card-name'))
+            }
+            if (sourceCard.getAttribute('card-number')) {
+                card.setAttribute('card-number', sourceCard.getAttribute('card-number'))
+            }
+            if (sourceCard.getAttribute('card-collection')) {
+                card.setAttribute('card-collection', sourceCard.getAttribute('card-collection'))
+            }
+            if (sourceCard.getAttribute('mask')) {
+                card.setAttribute('mask', sourceCard.getAttribute('mask'))
+            }
+            card.setAttribute('interactive', '')
+
+            overlayCardContainer.innerHTML = ''
+            overlayCardContainer.appendChild(card)
+            currentOverlayCard = card
+
+            // Copy generated content for random sources
+            card.copyContentFrom(sourceCard)
+        }
+
+        function closeOverlay() {
+            overlay.classList.remove('active')
+            if (currentOverlayCard) {
+                currentOverlayCard.remove()
+                currentOverlayCard = null
+            }
+        }
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeOverlay()
+        })
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && overlay.classList.contains('active')) {
+                closeOverlay()
+            }
+        })
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Calculate and display stats
+            const xlPixels = 400 * 640
+            const xsPixels = 100 * 160
+            document.getElementById('pixel-ratio').textContent = `${(xlPixels / xsPixels).toFixed(0)}×`
+            document.getElementById('memory-savings').textContent = `${((1 - xsPixels/xlPixels) * 100).toFixed(0)}%`
+
+            // Update context count periodically
+            function updateContextCount() {
+                const stats = sticker.poolStats
+                document.getElementById('active-contexts').textContent = `${stats.inUse} / ${stats.total}`
+            }
+            updateContextCount()
+            setInterval(updateContextCount, 500)
+
+            // Add click handlers to all static sticker cards
+            document.querySelectorAll('.demo-section sticker-card').forEach(card => {
+                card.style.cursor = 'pointer'
+                card.addEventListener('click', () => openOverlay(card))
+            })
+
+            // Size presets data
+            const sizeData = [
+                { name: 'XS', value: 'xs', resolution: '100 × 160', pixels: 16000 },
+                { name: 'S', value: 's', resolution: '150 × 240', pixels: 36000 },
+                { name: 'M', value: 'm', resolution: '200 × 320', pixels: 64000 },
+                { name: 'L', value: 'l', resolution: '300 × 480', pixels: 144000 },
+                { name: 'XL', value: 'xl', resolution: '400 × 640', pixels: 256000 },
+                { name: 'XXL', value: 'xxl', resolution: 'Auto × DPR', pixels: 1024000 }
+            ]
+
+            // Create lazy grid with 100 cards
+            const grid = document.getElementById('lazy-grid')
+            const shaders = sticker.shaderNames
+            const gridCards = []
+
+            for (let i = 0; i < 100; i++) {
+                const card = document.createElement('sticker-card')
+                card.setAttribute('size', 'xs')
+                card.setAttribute('lazy', '')
+                card.setAttribute('shader', shaders[i % shaders.length])
+                card.setAttribute('card-src', i % 2 === 0 ? 'random-emoji' : 'random-geometric')
+                card.setAttribute('card-number', String(i + 1).padStart(3, '0'))
+                card.setAttribute('interactive', '')
+                card.style.cursor = 'pointer'
+                card.addEventListener('click', () => openOverlay(card))
+                grid.appendChild(card)
+                gridCards.push(card)
+            }
+
+            // Slider controls
+            const slider = document.getElementById('size-slider')
+            const sizeDisplay = document.getElementById('size-display')
+            const sizeLabels = document.getElementById('size-labels')
+            const perfDescription = document.getElementById('perf-description')
+
+            const xxlPixels = sizeData[5].pixels // 1,024,000
+
+            function formatNumber(num) {
+                if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+                if (num >= 1000) return (num / 1000).toFixed(0) + 'K'
+                return num.toString()
+            }
+
+            function updateSize(index) {
+                const size = sizeData[index]
+
+                // Update display
+                sizeDisplay.innerHTML = `${size.name}<small>${size.resolution}</small>`
+
+                // Update label highlighting
+                sizeLabels.querySelectorAll('span').forEach((span, i) => {
+                    span.classList.toggle('active', i === index)
+                })
+
+                // Update performance description (accurate: only applies during hover/preview generation)
+                const speedup = Math.round(xxlPixels / size.pixels)
+
+                if (speedup === 1) {
+                    perfDescription.innerHTML = `<strong>XXL: ~${formatNumber(size.pixels)} pixels</strong> — maximum quality using container × DPR. Slower preview generation and heavier GPU load during hover.`
+                } else {
+                    perfDescription.innerHTML = `<strong>${size.name}: ${formatNumber(size.pixels)} pixels</strong> — ${speedup}× fewer pixels than XXL during hover and preview generation. Idle cards show static images (no GPU cost).`
+                }
+
+                // Update all cards
+                gridCards.forEach(card => {
+                    card.setAttribute('size', size.value)
+                })
+            }
+
+            // Slider change handler
+            slider.addEventListener('input', (e) => {
+                updateSize(parseInt(e.target.value))
+            })
+
+            // Click on size labels
+            sizeLabels.addEventListener('click', (e) => {
+                if (e.target.dataset.value !== undefined) {
+                    const value = parseInt(e.target.dataset.value)
+                    slider.value = value
+                    updateSize(value)
+                }
+            })
+        })
+    </script>
+</body>
+</html>
