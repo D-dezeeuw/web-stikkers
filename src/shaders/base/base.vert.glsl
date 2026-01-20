@@ -16,6 +16,8 @@ out vec3 v_worldPosition;
 out vec3 v_worldNormal;
 out vec3 v_viewDirection;
 out vec3 v_tangentViewDir;
+out vec3 v_tangent;
+out vec3 v_bitangent;
 out float v_depth;
 
 void main() {
@@ -43,6 +45,10 @@ void main() {
     vec3 B = cross(N, T);
     mat3 TBN = transpose(mat3(T, B, N));
     v_tangentViewDir = TBN * v_viewDirection;
+
+    // Pass tangent and bitangent for anisotropic shading
+    v_tangent = T;
+    v_bitangent = B;
 
     // UV passthrough
     v_uv = a_uv;

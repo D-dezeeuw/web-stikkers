@@ -18,8 +18,8 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
+uniform float u_effectScale;
 
 out vec4 fragColor;
 
@@ -112,9 +112,9 @@ void main() {
     burstEffect += streakColor * streaks * effectIntensity * 0.5;
     burstEffect += rainbow * ring * effectIntensity * 0.8;  // More color in ring
 
+    // Scale effect intensity (for texture-brightness mask)
     vec3 finalColor = baseColor;
-    finalColor += burstEffect;
-    finalColor += rim;
+    finalColor += (burstEffect + rim) * u_effectScale;
 
     // Apply effect mask: blend between original and effect based on mask
     float mask = texture(u_effectMask, v_uv).r;
@@ -125,15 +125,6 @@ void main() {
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
-
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;

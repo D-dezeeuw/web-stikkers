@@ -22,6 +22,7 @@ import { TextureLoader } from './TextureLoader.js'
 import { WebGLContextPool } from './WebGLContextPool.js'
 import * as ShaderRegistry from './ShaderRegistry.js'
 import { CONFIG } from '../config.js'
+import { BloomPass } from '../post/BloomPass.js'
 
 // Mask factory map
 const MASK_FACTORIES = {
@@ -69,7 +70,7 @@ const DEFAULT_OPTIONS = {
 
     // Effects
     mask: 'full',
-    bloom: false,
+    bloom: 0.95,  // 0 = off, >0 = intensity (max 2.0)
 
     // Behavior
     interactive: true,
@@ -89,6 +90,9 @@ export class sticker {
     constructor(canvas, options = {}) {
         this.canvas = canvas  // Target canvas (2D) for displaying results
         this.options = { ...DEFAULT_OPTIONS, ...options }
+
+        // Track if bloom was explicitly set by user (for auto-adjustment with brightness mask)
+        this._bloomExplicitlySet = 'bloom' in options
 
         // State
         this.isActive = false
@@ -117,6 +121,7 @@ export class sticker {
         this.textureLoader = null  // Card-specific
         this.cardFactory = null    // Card-specific
         this.randomFactory = null  // Card-specific
+        this.bloomPass = null      // Card-specific bloom post-processing
 
         // Stored masks from card loading (for normal/brightness mask options)
         this.storedNormalMap = null
@@ -227,11 +232,14 @@ export class sticker {
             this.card.setTexture('foil', textures.foil)
             this.card.setTexture('depth', textures.depth)
 
-            // Create effect mask (card-specific)
-            this.updateMask(this.options.mask)
-
             // Load card texture (card-specific)
+            // This stores normal/brightness textures but doesn't set effectMask
             await this.loadCardSource(this.options.cardSrc)
+
+            // Apply effect mask AFTER card source loads
+            // This ensures storedNormalMap/storedBrightnessMask are available
+            // and respects the user's mask selection
+            this.updateMask(this.options.mask)
 
             // Notify that source has loaded (for generated name etc)
             this.onSourceLoaded?.()
@@ -259,6 +267,18 @@ export class sticker {
 
             // Setup resize observer
             this.setupResizeObserver()
+
+            // Create bloom pass if enabled (after renderer, needs gl context)
+            const bloomIntensity = Math.max(0, Math.min(2, this.options.bloom))
+            if (bloomIntensity > 0) {
+                this.bloomPass = new BloomPass(this.gl)
+                await this.bloomPass.loadShaders()
+                const offscreenCanvas = this._borrowedContext.canvas
+                this.bloomPass.resize(offscreenCanvas.width, offscreenCanvas.height)
+                this.bloomPass.setOutputFBO(null)  // Output to offscreen canvas
+                this.bloomPass.enabled = true
+                this.bloomPass.intensity = bloomIntensity
+            }
 
             this.isReady = true
         } catch (err) {
@@ -302,6 +322,12 @@ export class sticker {
                 await this._generateAndCacheRandomContent(sourceType, emoji)
                 this._cachedSourceType = sourceType
             }
+
+            // Default to radial-edge mask for random cards (better visual fit)
+            // Only override the default mask - respect explicit user choices
+            if (this.options.mask === 'full') {
+                this.options.mask = 'radial-edge'
+            }
             return
         }
 
@@ -312,16 +338,16 @@ export class sticker {
         this.card.setTexture('base', texture)
 
         // Load normal map if provided, otherwise generate brightness mask
+        // Note: We only STORE these textures here - the actual effectMask is set
+        // by updateMask() after loadCardSource() completes, respecting user's mask selection
         if (this.options.cardNormal) {
             const normalMap = await this.textureLoader.load(this.options.cardNormal)
             this.storedNormalMap = normalMap
             this.storedBrightnessMask = null
-            this.card.setTexture('effectMask', normalMap)
         } else {
             const brightnessMask = await this._createBrightnessMaskFromUrl(source)
             this.storedNormalMap = null
             this.storedBrightnessMask = brightnessMask
-            this.card.setTexture('effectMask', brightnessMask)
         }
 
         // Update text overlays (collection name is overlay-based for URL content)
@@ -374,9 +400,9 @@ export class sticker {
         const cardData = this.randomFactory.createRandomCard({ type, emoji, collectionName })
 
         this.card.setTexture('base', cardData.texture)
+        // Store brightness mask - actual effectMask is set by updateMask() after loadCardSource()
         this.storedNormalMap = null
         this.storedBrightnessMask = cardData.brightnessMask
-        this.card.setTexture('effectMask', cardData.brightnessMask)
 
         // Cache the generated content for reuse
         this._isGeneratedContent = true
@@ -463,6 +489,15 @@ export class sticker {
         const factory = MASK_FACTORIES[maskName]
         if (factory) {
             this.card.setTexture('effectMask', factory(this.gl))
+            return
+        }
+
+        // Fallback: requested mask unavailable (e.g., 'normal' without a normal map)
+        // Use brightness mask if available, otherwise default to 'full'
+        if (this.storedBrightnessMask) {
+            this.card.setTexture('effectMask', this.storedBrightnessMask)
+        } else {
+            this.card.setTexture('effectMask', MASK_FACTORIES['full'](this.gl))
         }
     }
 
@@ -515,6 +550,11 @@ export class sticker {
 
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
             this.renderer.updateProjection(width / height)
+
+            // Resize bloom pass if it exists
+            if (this.bloomPass) {
+                this.bloomPass.resize(this.canvas.width, this.canvas.height)
+            }
         })
 
         const parent = this.canvas.parentElement
@@ -754,23 +794,46 @@ export class sticker {
         this.card.update(deltaTime)
         this.controller?.update(deltaTime)
 
+        // Reduce effect intensity for certain masks on intense shaders
+        const isReducedMask = this.options.mask === 'brightness' || this.options.mask === 'radial-edge'
+        const isIntenseShader = this.options.shader === 'holographic' || this.options.shader === 'starburst'
+        const effectScale = (isReducedMask && isIntenseShader) ? 0.5 : 1.0
+
         const effectSettings = {
-            showMask: false,
             maskActive: this.options.mask !== 'full',
             isBaseShader: this.options.shader === 'base',
-            textOpacity: this._isStaticRender ? 1.0 : 0.2
+            textOpacity: this._isStaticRender ? 1.0 : 0.2,
+            effectScale
         }
 
-        // Render to the offscreen canvas (from pool)
         const gl = this.gl
         const offscreenCanvas = this._borrowedContext.canvas
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null)
-        gl.viewport(0, 0, offscreenCanvas.width, offscreenCanvas.height)
-        gl.clearColor(0, 0, 0, 0)  // Transparent background
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        gl.disable(gl.BLEND)
 
-        this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
+        if (this.bloomPass?.enabled) {
+            // Bloom pipeline: render to bloom FBO → process → output to offscreen canvas
+            this.bloomPass.beginSceneRender()
+            gl.clearColor(0, 0, 0, 0)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+            gl.disable(gl.BLEND)
+
+            this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
+
+            this.bloomPass.endSceneRender()
+            this.bloomPass.renderBloom()  // Outputs to offscreen canvas (FBO=null)
+
+            // Invalidate texture cache - bloom composite binds sceneFBO.texture to slot 0,
+            // which would cause a feedback loop on the next frame if CardRenderer skips rebinding
+            this.renderer.invalidateTextureCache()
+        } else {
+            // Direct render to offscreen canvas (no bloom)
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null)
+            gl.viewport(0, 0, offscreenCanvas.width, offscreenCanvas.height)
+            gl.clearColor(0, 0, 0, 0)
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+            gl.disable(gl.BLEND)
+
+            this.renderer.render(this.card, this.controller, deltaTime, effectSettings)
+        }
 
         // Copy to target canvas if requested
         if (copyToTarget) {
@@ -861,6 +924,8 @@ export class sticker {
         // Clean up card-specific WebGL resources only (not pooled resources)
         this.controller?.destroy()
         this.textRenderer?.destroy()
+        this.bloomPass?.destroy()
+        this.bloomPass = null
         // Note: geometry and shaderManager are pooled, don't destroy them
 
         // Return context to pool
@@ -910,6 +975,8 @@ export class sticker {
         if (this.gl && this.card) {
             try {
                 await this.loadCardSource(source)
+                // Re-apply mask after source loads to use new texture data
+                this.updateMask(this.options.mask)
                 this.onSourceLoaded?.()
             } catch (err) {
                 console.error('Failed to load card source:', err)
@@ -926,17 +993,14 @@ export class sticker {
         if (this.options.cardNormal === source) return  // Skip if unchanged
         this.options.cardNormal = source
 
-        // Only reload card source to apply new normal map if:
-        // 1. We have an active card to update
-        // 2. The card source is NOT a random/procedural source (they don't use normal maps)
-        // 3. We're setting a new normal map (not removing it)
-        // This prevents double-generation when switching to random sources
+        // Reload card source when normal map changes (added or removed)
+        // Skip for random/procedural sources which don't use normal maps
         const isRandomSource = this.options.cardSrc?.startsWith('random-')
-        if (this.gl && this.card && this.options.cardSrc && !isRandomSource && source) {
+        if (this.gl && this.card && this.options.cardSrc && !isRandomSource) {
             try {
                 await this.loadCardSource(this.options.cardSrc)
             } catch (err) {
-                console.error('Failed to load card normal:', err)
+                console.error('Failed to reload card source:', err)
                 this.onError?.(err)
             }
         }
@@ -995,6 +1059,43 @@ export class sticker {
         if (this.gl && this.card) {
             this.updateMask(mask)
         }
+        // Auto-adjust bloom for brightness mask (if not explicitly set by user)
+        this._autoAdjustBloomForMask(mask)
+    }
+
+    /**
+     * Auto-adjust bloom intensity based on mask type
+     * Certain masks cause excessive bloom, so we reduce it automatically
+     * unless the user has explicitly set a bloom value
+     */
+    _autoAdjustBloomForMask(mask) {
+        if (this._bloomExplicitlySet) return  // User set bloom explicitly, don't override
+
+        const isReducedMask = mask === 'brightness' || mask === 'radial-edge'
+        const targetBloom = isReducedMask ? 0.2 : 0.95  // Lower for reduced masks, normal default otherwise
+
+        if (this.options.bloom !== targetBloom) {
+            this.options.bloom = targetBloom
+            if (this.bloomPass) {
+                this.bloomPass.enabled = targetBloom > 0
+                this.bloomPass.intensity = targetBloom
+            }
+        }
+    }
+
+    /**
+     * Set bloom intensity
+     * @param {number} intensity - 0 = off, >0 = bloom strength (default 0.95, max 2.0)
+     */
+    setBloom(intensity) {
+        const value = Math.max(0, Math.min(2, intensity))
+        if (this.options.bloom === value) return
+        this.options.bloom = value
+        this._bloomExplicitlySet = true  // User explicitly set bloom, don't auto-adjust
+        if (this.bloomPass) {
+            this.bloomPass.enabled = value > 0
+            this.bloomPass.intensity = value
+        }
     }
 
     /**
@@ -1026,6 +1127,8 @@ export class sticker {
                     this.setMask(value)
                     break
                 case 'bloom':
+                    this.setBloom(value)
+                    break
                 case 'interactive':
                 case 'lazy':
                 case 'autoplay':

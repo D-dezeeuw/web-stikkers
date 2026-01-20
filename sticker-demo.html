@@ -324,7 +324,7 @@
 <span class="code-comment">&lt;!-- lazy: Defer WebGL init until hover (boolean) --&gt;</span>
 <span class="code-comment">&lt;!-- lazy-margin: Pixels before viewport to start rendering (default: 200) --&gt;</span>
 <span class="code-comment">&lt;!-- autoplay: Auto-start animation (default: true) --&gt;</span>
-<span class="code-comment">&lt;!-- bloom: Enable bloom effect (boolean) --&gt;</span>
+<span class="code-comment">&lt;!-- bloom: Bloom intensity (0=off, 0.1-2.0=strength, default 0.95) --&gt;</span>
 </code></pre>
     </div>
 
@@ -373,6 +373,7 @@
                 normalUrlInput.style.borderColor = ''
 
                 const preset = srcSelect.value
+                const maskSelect = document.getElementById('mask-select')
                 if (preset === 'custom') {
                     const src = srcUrlInput.value.trim()
                     const normal = normalUrlInput.value.trim()
@@ -381,8 +382,14 @@
                     }
                     if (normal) {
                         demoCard.setAttribute('card-normal', normal)
+                        // Use normal map mask when normal map is provided
+                        maskSelect.value = 'normal'
+                        demoCard.setAttribute('mask', 'normal')
                     } else {
                         demoCard.removeAttribute('card-normal')
+                        // Use brightness mask when no normal map
+                        maskSelect.value = 'brightness'
+                        demoCard.setAttribute('mask', 'brightness')
                     }
                     // Clear collection and reset card name to default for custom URLs
                     document.getElementById('card-collection').value = ''
@@ -394,6 +401,9 @@
                     // random-emoji or random-geometric
                     demoCard.setAttribute('card-src', preset)
                     demoCard.removeAttribute('card-normal')
+                    // Use radial-edge mask for random sources (best visual fit)
+                    maskSelect.value = 'radial-edge'
+                    demoCard.setAttribute('mask', 'radial-edge')
                 }
             }
 

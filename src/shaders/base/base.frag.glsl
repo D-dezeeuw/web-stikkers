@@ -16,7 +16,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 
 out vec4 fragColor;
 
@@ -27,13 +26,6 @@ void main() {
     // Overlay text on base texture (white text)
     float textAlpha = texture(u_textTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), textAlpha);
-
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        fragColor = vec4(vec3(maskValue), baseColor.a);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;

@@ -71,6 +71,10 @@ export class Geometry {
         this.gl.bindVertexArray(this.vao)
     }
 
+    /**
+     * Unbind the VAO (optional - only needed if other code expects unbound state)
+     * Note: Skipping unbind is a minor optimization since we rebind at start of next frame
+     */
     unbind() {
         this.gl.bindVertexArray(null)
     }

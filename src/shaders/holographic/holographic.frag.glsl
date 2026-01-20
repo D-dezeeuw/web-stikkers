@@ -18,9 +18,9 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_maskActive;
 uniform float u_textOpacity;
+uniform float u_effectScale;
 
 out vec4 fragColor;
 
@@ -174,7 +174,8 @@ void main() {
     holoEffect += vec3(highlight);
     holoEffect += vec3(textureOverlay);
 
-    vec3 finalColor = baseColor + holoEffect + rim;
+    // Scale effect intensity (for texture-brightness mask)
+    vec3 finalColor = baseColor + (holoEffect + rim) * u_effectScale;
 
     // Apply effect mask: blend between original and effect based on mask
     float mask = texture(u_effectMask, v_uv).r;
@@ -185,15 +186,6 @@ void main() {
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
-
-    // Debug: show mask (including text)
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;

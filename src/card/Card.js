@@ -33,6 +33,9 @@ export class Card {
 
         this.modelMatrix = new Matrix4()
         this.smoothing = options.smoothing ?? 8
+
+        // Dirty flag to avoid redundant matrix recalculations
+        this._matrixDirty = true
     }
 
     setTargetRotation(x, y, z = 0) {
@@ -45,11 +48,21 @@ export class Card {
         // Smooth interpolation toward target rotation
         const t = Math.min(1, deltaTime * this.smoothing)
 
+        const prevX = this.rotation.x
+        const prevY = this.rotation.y
+        const prevZ = this.rotation.z
+
         this.rotation.x = this.lerp(this.rotation.x, this.targetRotation.x, t)
         this.rotation.y = this.lerp(this.rotation.y, this.targetRotation.y, t)
         this.rotation.z = this.lerp(this.rotation.z, this.targetRotation.z, t)
 
-        this.updateModelMatrix()
+        // Only mark dirty if rotation actually changed (threshold to handle float precision)
+        const threshold = 0.0001
+        if (Math.abs(this.rotation.x - prevX) > threshold ||
+            Math.abs(this.rotation.y - prevY) > threshold ||
+            Math.abs(this.rotation.z - prevZ) > threshold) {
+            this._matrixDirty = true
+        }
     }
 
     lerp(a, b, t) {
@@ -66,6 +79,10 @@ export class Card {
     }
 
     getModelMatrix() {
+        if (this._matrixDirty) {
+            this.updateModelMatrix()
+            this._matrixDirty = false
+        }
         return this.modelMatrix.elements
     }
 

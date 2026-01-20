@@ -8,8 +8,8 @@ export class UIController {
         this.cardSelect = document.getElementById('card-select')
         this.shaderSelect = document.getElementById('shader-select')
         this.maskSelect = document.getElementById('mask-select')
-        this.bloomToggle = document.getElementById('bloom-toggle')
-        this.showMaskToggle = document.getElementById('show-mask-toggle')
+        this.bloomSlider = document.getElementById('bloom-slider')
+        this.bloomValue = document.getElementById('bloom-value')
         this.cardTextInput = document.getElementById('card-text')
         this.cardNumberInput = document.getElementById('card-number')
     }
@@ -24,13 +24,12 @@ export class UIController {
         // Mask select
         this.maskSelect.addEventListener('change', (e) => this.onMaskChange(e))
 
-        // Effect toggles
-        this.bloomToggle.addEventListener('change', (e) => {
-            this.app.bloomPass.enabled = e.target.checked
-        })
-
-        this.showMaskToggle.addEventListener('change', (e) => {
-            this.app.showMask = e.target.checked
+        // Bloom slider
+        this.bloomSlider.addEventListener('input', (e) => {
+            const intensity = parseFloat(e.target.value)
+            this.app.bloomPass.enabled = intensity > 0
+            this.app.bloomPass.intensity = intensity
+            this.bloomValue.textContent = intensity.toFixed(1)
         })
 
         // Text inputs
@@ -60,9 +59,21 @@ export class UIController {
     }
 
     onCardChange(e) {
-        const cardData = this.app.cards[e.target.value]
+        const cardKey = e.target.value
+        const cardData = this.app.cards[cardKey]
         if (cardData) {
             this.app.card.setTexture('base', cardData.texture)
+
+            // Default to radial-edge mask for random cards
+            const isRandomCard = cardKey === 'random-emoji' || cardKey === 'random-geometric'
+            if (isRandomCard) {
+                this.maskSelect.value = 'radial-edge'
+                this.app.maskActive = true
+                this.app.maskType = 'radial-edge'
+                this.app.card.setTexture('effectMask', this.app.effectMasks['radial-edge'])
+                return
+            }
+
             // Update mask based on current mask selection
             const maskValue = this.maskSelect.value
             if (maskValue === 'normal-map') {
@@ -83,6 +94,7 @@ export class UIController {
     onMaskChange(e) {
         // Track if a real mask is active (not "full")
         this.app.maskActive = e.target.value !== 'full'
+        this.app.maskType = e.target.value  // Track mask type for effect scaling
 
         const selectedCard = this.cardSelect.value
         const cardData = this.app.cards[selectedCard]
@@ -116,6 +128,7 @@ export class UIController {
         this.cardSelect.value = 'zelda'
         this.shaderSelect.value = 'holographic'
         this.maskSelect.value = 'normal-map'
-        this.bloomToggle.checked = this.app.bloomPass.enabled
+        this.bloomSlider.value = this.app.bloomPass.intensity
+        this.bloomValue.textContent = this.app.bloomPass.intensity.toFixed(1)
     }
 }

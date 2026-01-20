@@ -128,8 +128,8 @@ const ATTR_TO_OPTION = {
 // Attributes that don't map to sticker options (handled separately)
 const ELEMENT_ONLY_ATTRS = ['lazy-margin']
 
-// Boolean attributes
-const BOOLEAN_ATTRS = ['bloom', 'interactive', 'lazy', 'autoplay']
+// Boolean attributes (bloom is numeric, not boolean)
+const BOOLEAN_ATTRS = ['interactive', 'lazy', 'autoplay']
 
 // Default margin for viewport intersection (pixels)
 const DEFAULT_LAZY_MARGIN = 200
@@ -439,6 +439,14 @@ export class stickerElement extends HTMLElement {
      * Parse attribute value to appropriate type
      */
     _parseAttributeValue(name, value) {
+        // Bloom: numeric intensity (0-2), presence without value = 0.95 default
+        if (name === 'bloom') {
+            if (value === null) return 0
+            if (value === '' || value === 'true') return 0.95
+            if (value === 'false') return 0
+            const num = parseFloat(value)
+            return isNaN(num) ? 0.95 : Math.max(0, Math.min(2, num))
+        }
         if (BOOLEAN_ATTRS.includes(name)) {
             // Boolean: present = true, absent = false, "false" = false
             if (value === null) return false

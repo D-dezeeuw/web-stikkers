@@ -40,6 +40,17 @@ export class CardRenderer {
         // Maps slot number to the currently bound texture object
         this._boundTextures = new Map()
 
+        // Uniform cache to skip redundant uniform updates
+        // Tracks last-set values to avoid unnecessary GL calls
+        this._uniformCache = {
+            maskActive: null,
+            isBaseShader: null,
+            textOpacity: null,
+            effectScale: null
+        }
+        // Track which shader the uniform cache applies to
+        this._cachedShaderName = null
+
         // Target: card fills configured percent of canvas height
         // With card height 1.6, FOV 45°: Z = cardHeight / (fillPercent * 2 * tan(FOV/2))
         const cardHeight = 1.6
@@ -77,9 +88,19 @@ export class CardRenderer {
         const shader = this.shaderManager.getActive()
         if (!shader) return
 
+        const shaderName = this.shaderManager.getActiveName()
         shader.use()
 
-        // Set matrices
+        // Invalidate uniform cache on shader switch
+        if (this._cachedShaderName !== shaderName) {
+            this._cachedShaderName = shaderName
+            this._uniformCache.maskActive = null
+            this._uniformCache.isBaseShader = null
+            this._uniformCache.textOpacity = null
+            this._uniformCache.effectScale = null
+        }
+
+        // Set matrices (model changes every frame, view/projection are static but cheap)
         shader.setUniformMatrix4fv('u_modelMatrix', card.getModelMatrix())
         shader.setUniformMatrix4fv('u_viewMatrix', this.viewMatrix.elements)
         shader.setUniformMatrix4fv('u_projectionMatrix', this.projectionMatrix.elements)
@@ -94,22 +115,39 @@ export class CardRenderer {
         // Set time
         shader.setUniform1f('u_time', this.time)
 
-        // Set mouse position
-        const mousePos = controller.getMousePosition()
-        shader.setUniform2f('u_mousePosition', mousePos[0], mousePos[1])
+        // Set mouse position (controller values directly to avoid array allocation)
+        shader.setUniform2f('u_mousePosition', controller.mouseX, controller.mouseY)
 
         // Set card rotation
         const rotation = card.getRotation()
         shader.setUniform2f('u_cardRotation', rotation[0], rotation[1])
 
-        // Set effect settings
-        shader.setUniform1f('u_showMask', effectSettings.showMask ? 1.0 : 0.0)
-        shader.setUniform1f('u_maskActive', effectSettings.maskActive ? 1.0 : 0.0)
-        shader.setUniform1f('u_isBaseShader', effectSettings.isBaseShader ? 1.0 : 0.0)
-        shader.setUniform1f('u_textOpacity', effectSettings.textOpacity ?? 0.2)
+        // Set effect settings with caching (these change infrequently)
+        const maskActiveVal = effectSettings.maskActive ? 1.0 : 0.0
+        if (this._uniformCache.maskActive !== maskActiveVal) {
+            shader.setUniform1f('u_maskActive', maskActiveVal)
+            this._uniformCache.maskActive = maskActiveVal
+        }
+
+        const isBaseShaderVal = effectSettings.isBaseShader ? 1.0 : 0.0
+        if (this._uniformCache.isBaseShader !== isBaseShaderVal) {
+            shader.setUniform1f('u_isBaseShader', isBaseShaderVal)
+            this._uniformCache.isBaseShader = isBaseShaderVal
+        }
+
+        const textOpacityVal = effectSettings.textOpacity ?? 0.2
+        if (this._uniformCache.textOpacity !== textOpacityVal) {
+            shader.setUniform1f('u_textOpacity', textOpacityVal)
+            this._uniformCache.textOpacity = textOpacityVal
+        }
+
+        const effectScaleVal = effectSettings.effectScale ?? 1.0
+        if (this._uniformCache.effectScale !== effectScaleVal) {
+            shader.setUniform1f('u_effectScale', effectScaleVal)
+            this._uniformCache.effectScale = effectScaleVal
+        }
 
         // Bind only textures needed by the active shader
-        const shaderName = this.shaderManager.getActiveName()
         const requiredTextures = SHADER_TEXTURES[shaderName] || TEXTURE_BINDINGS.map(b => b.name)
 
         for (const { slot, name, uniform } of TEXTURE_BINDINGS) {
@@ -125,10 +163,9 @@ export class CardRenderer {
             }
         }
 
-        // Draw
+        // Draw (skip unbind - VAO is rebound at start of next frame anyway)
         this.geometry.bind()
         this.geometry.draw()
-        this.geometry.unbind()
     }
 
     /**
@@ -137,5 +174,17 @@ export class CardRenderer {
      */
     invalidateTextureCache() {
         this._boundTextures.clear()
+    }
+
+    /**
+     * Clear the uniform cache
+     * Call this when shader state may have changed externally
+     */
+    invalidateUniformCache() {
+        this._cachedShaderName = null
+        this._uniformCache.maskActive = null
+        this._uniformCache.isBaseShader = null
+        this._uniformCache.textOpacity = null
+        this._uniformCache.effectScale = null
     }
 }

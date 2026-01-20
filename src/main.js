@@ -19,8 +19,8 @@ class CardShaderApp {
         this.canvas = document.getElementById('card-canvas')
 
         // Effect settings
-        this.showMask = false
         this.maskActive = true
+        this.maskType = 'normal-map'  // Track current mask type for effect scaling
         this.cardText = ''
         this.cardNumber = ''
 
@@ -113,7 +113,7 @@ class CardShaderApp {
         this.textRenderer = new TextRenderer(this.gl)
         this.cardText = document.getElementById('card-text').value || 'Link'
         this.cardNumber = document.getElementById('card-number').value || '69/321'
-        this.textRenderer.createTextTextures(this.cardText, this.cardNumber, this.card)
+        this.textRenderer.createTextTextures(this.cardText, this.cardNumber, '', this.card)
 
         // Create controller and renderer
         this.controller = new CardController(this.card, this.canvas)
@@ -184,14 +184,20 @@ class CardShaderApp {
         this.controller.update(deltaTime)
         this.card.update(deltaTime)
 
+        // Reduce effect intensity for certain masks on intense shaders
+        const isReducedMask = this.maskType === 'texture-brightness' || this.maskType === 'radial-edge'
+        const shaderName = this.shaderManager.getActiveName()
+        const isIntenseShader = shaderName === 'holographic' || shaderName === 'starburst'
+        const effectScale = (isReducedMask && isIntenseShader) ? 0.5 : 1.0
+
         const effectSettings = {
-            showMask: this.showMask,
             maskActive: this.maskActive,
-            isBaseShader: this.shaderManager.getActiveName() === 'base'
+            isBaseShader: shaderName === 'base',
+            effectScale
         }
 
         // Reduce bloom intensity when no mask is active (full card effect)
-        this.bloomPass.intensity = this.maskActive ? 1.2 : 0.2;
+        this.bloomPass.intensity = this.maskActive ? 0.95 : 0.2;
 
         if (this.bloomPass.enabled) {
             // Bloom enabled: card → bloomPass → screen

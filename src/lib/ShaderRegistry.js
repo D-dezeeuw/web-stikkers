@@ -23,6 +23,8 @@ out vec3 v_worldPosition;
 out vec3 v_worldNormal;
 out vec3 v_viewDirection;
 out vec3 v_tangentViewDir;
+out vec3 v_tangent;
+out vec3 v_bitangent;
 out float v_depth;
 
 void main() {
@@ -51,6 +53,10 @@ void main() {
     mat3 TBN = transpose(mat3(T, B, N));
     v_tangentViewDir = TBN * v_viewDirection;
 
+    // Pass tangent and bitangent for anisotropic shading
+    v_tangent = T;
+    v_bitangent = B;
+
     // UV passthrough
     v_uv = a_uv;
 }
@@ -78,7 +84,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 
 out vec4 fragColor;
 
@@ -89,13 +94,6 @@ void main() {
     // Overlay text on base texture (white text)
     float textAlpha = texture(u_textTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), textAlpha);
-
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        fragColor = vec4(vec3(maskValue), baseColor.a);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
@@ -132,9 +130,9 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_maskActive;
 uniform float u_textOpacity;
+uniform float u_effectScale;
 
 out vec4 fragColor;
 
@@ -288,7 +286,8 @@ void main() {
     holoEffect += vec3(highlight);
     holoEffect += vec3(textureOverlay);
 
-    vec3 finalColor = baseColor + holoEffect + rim;
+    // Scale effect intensity (for texture-brightness mask)
+    vec3 finalColor = baseColor + (holoEffect + rim) * u_effectScale;
 
     // Apply effect mask: blend between original and effect based on mask
     float mask = texture(u_effectMask, v_uv).r;
@@ -299,15 +298,6 @@ void main() {
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
-
-    // Debug: show mask (including text)
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
@@ -344,7 +334,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -446,15 +435,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -489,7 +469,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -650,15 +629,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), baseColor.a);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -694,7 +664,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -866,15 +835,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -910,7 +870,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -1007,15 +966,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -1050,7 +1000,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -1273,15 +1222,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -1317,8 +1257,8 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
+uniform float u_effectScale;
 
 out vec4 fragColor;
 
@@ -1411,9 +1351,9 @@ void main() {
     burstEffect += streakColor * streaks * effectIntensity * 0.5;
     burstEffect += rainbow * ring * effectIntensity * 0.8;  // More color in ring
 
+    // Scale effect intensity (for texture-brightness mask)
     vec3 finalColor = baseColor;
-    finalColor += burstEffect;
-    finalColor += rim;
+    finalColor += (burstEffect + rim) * u_effectScale;
 
     // Apply effect mask: blend between original and effect based on mask
     float mask = texture(u_effectMask, v_uv).r;
@@ -1424,15 +1364,6 @@ void main() {
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
-
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
@@ -1469,7 +1400,6 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
 
 out vec4 fragColor;
@@ -1590,15 +1520,6 @@ void main() {
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
 
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
-
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;
     finalColor = mix(finalColor, vec3(1.0), numberAlpha);
@@ -1622,6 +1543,8 @@ in vec3 v_worldPosition;
 in vec3 v_worldNormal;
 in vec3 v_viewDirection;
 in vec3 v_tangentViewDir;
+in vec3 v_tangent;
+in vec3 v_bitangent;
 in float v_depth;
 
 uniform sampler2D u_baseTexture;
@@ -1635,19 +1558,38 @@ uniform sampler2D u_collectionTexture;
 uniform float u_time;
 uniform vec2 u_mousePosition;
 uniform vec2 u_cardRotation;
-uniform float u_showMask;
 uniform float u_textOpacity;
+uniform float u_effectScale;
 
 out vec4 fragColor;
 
 // Parameters
 const float MATTE_FACTOR = 0.55;
-const float METALLIC_SPEC_POWER = 64.0;
 const float EMBOSS_STRENGTH = 0.7;
 const float PATTERN_SCALE = 25.0;
+
+// Anisotropic roughness - controls highlight stretch (brushed metal)
+const float ROUGHNESS_X = 0.02;  // Along brush direction (very tight)
+const float ROUGHNESS_Y = 0.9;   // Perpendicular (very stretched)
+
 float calculateFresnel(vec3 normal, vec3 viewDir) {
     float fresnel = 1.0 - max(dot(normal, viewDir), 0.0);
     return fresnel * fresnel;  // FRESNEL_POWER = 2.0
+}
+
+// Ward BRDF for anisotropic specular (brushed metal look)
+float wardAnisotropic(vec3 N, vec3 H, vec3 T, vec3 B, float ax, float ay) {
+    float NdotH = max(dot(N, H), 0.001);
+    float TdotH = dot(T, H);
+    float BdotH = dot(B, H);
+
+    float exponent = -2.0 * (
+        (TdotH * TdotH) / (ax * ax) +
+        (BdotH * BdotH) / (ay * ay)
+    ) / (1.0 + NdotH);
+
+    float denom = 4.0 * 3.14159 * ax * ay * sqrt(NdotH);
+    return exp(exponent) / max(denom, 0.001);
 }
 
 // Minimum effect visibility (30%)
@@ -1694,13 +1636,18 @@ void main() {
         1.0
     ));
 
-    // Specular highlight
+    // Anisotropic specular highlight (brushed metal)
     vec3 halfVec = normalize(lightDir + v_viewDirection);
-    float spec = pow(max(dot(v_worldNormal, halfVec), 0.0), METALLIC_SPEC_POWER);
+    float spec = wardAnisotropic(
+        v_worldNormal, halfVec,
+        v_tangent, v_bitangent,
+        ROUGHNESS_X, ROUGHNESS_Y
+    );
+    spec = clamp(spec * 2.0, 0.0, 1.0);  // Normalize and boost
 
-    // Metallic color (bright, with specular)
+    // Metallic color (bright, with anisotropic specular)
     vec3 metallicColor = baseColor * 1.4;
-    metallicColor += vec3(spec * 1.2 * effectIntensity);
+    metallicColor += vec3(spec * 1.5 * effectIntensity);
 
     // Strong color shift on metallic areas
     float colorShift = tilt.x * 0.2 + tilt.y * 0.2;
@@ -1730,13 +1677,16 @@ void main() {
     vec3 rim = rimColor * fresnel * 0.7 * effectIntensity * etchMask;
 
     // === COMBINE ===
-    vec3 finalColor = mix(matteColor, metallicColor, etchMask);
+    // Calculate base etched look
+    vec3 etchedBase = mix(matteColor, metallicColor, etchMask);
 
-    // Add emboss lighting
-    finalColor += vec3(embossLight * 0.5);
+    // Calculate the effect contribution (difference from original)
+    vec3 effectContribution = etchedBase - originalColor;
+    effectContribution += vec3(embossLight * 0.5);
+    effectContribution += rim;
 
-    // Add rim
-    finalColor += rim;
+    // Apply effect with scale for bloom
+    vec3 finalColor = originalColor + effectContribution * u_effectScale;
 
     // Slight vignette
     float vignette = 1.0 - length(v_uv - 0.5) * 0.15;
@@ -1751,15 +1701,6 @@ void main() {
 
     // Add white overlay for text readability (opacity controlled by uniform)
     finalColor = mix(finalColor, vec3(1.0), textMask * u_textOpacity);
-
-    // Debug: show mask
-    if (u_showMask > 0.5) {
-        float maskValue = texture(u_effectMask, v_uv).r;
-        float textValue = texture(u_textTexture, v_uv).r;
-        maskValue = max(maskValue, textValue);
-        fragColor = vec4(vec3(maskValue), alpha);
-        return;
-    }
 
     // Overlay number (white text, no shader effects)
     float numberAlpha = texture(u_numberTexture, v_uv).r;

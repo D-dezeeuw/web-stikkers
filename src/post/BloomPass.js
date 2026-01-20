@@ -192,6 +192,11 @@ export class BloomPass {
     renderBloom() {
         if (!this.enabled || !this.extractShader || this.pyramid.length === 0) return
 
+        // Early-out when bloom intensity is negligible (not visible)
+        // Old condition: (none - always processed full pyramid regardless of intensity)
+        // This saves the full 5-level downsample/upsample when bloom won't be visible
+        if (this.intensity < 0.01) return
+
         const gl = this.gl
 
         gl.disable(gl.DEPTH_TEST)
@@ -279,7 +284,7 @@ export class BloomPass {
         const gl = this.gl
         gl.bindVertexArray(this.quadVAO)
         gl.drawArrays(gl.TRIANGLES, 0, 6)
-        gl.bindVertexArray(null)
+        // Skip unbind - VAO is rebound before next draw anyway
     }
 
     destroy() {

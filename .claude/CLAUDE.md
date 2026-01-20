@@ -113,3 +113,11 @@ Returns: steps[], summary, meta
 - Percentiles: P10 = lucky, P90 = safe (lower missing = better)
 - Weights are estimates — Panini doesn't publish official odds
 - Cost calculation: buy boxes first (cheaper per card), then loose packs
+
+## Development Workflow
+
+### Dev Server
+- **Keep the dev server running** during the session - don't kill it after tests
+- Start with `npm run dev` (runs on port 8080)
+- Only stop the server when explicitly asked or session is ending
+- The server is needed for both automated tests and manual browser verification
