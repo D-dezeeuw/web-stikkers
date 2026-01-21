@@ -78,7 +78,12 @@ canvas {
 :host([size="large"]) .overlay-text {
     padding: 16px 32px;
     font-size: 1.125rem;
-    display: block;
+}
+
+:host([size="extra-large"]) .content,
+:host([size="extra-large"]) .overlay-text {
+    padding: 32px 64px;
+    font-size: 2.25rem;
 }
 
 /* Pressed state */
@@ -95,20 +100,9 @@ canvas {
 /* Text mask mode: overlay with black text, SVG filter punches holes */
 .overlay {
     display: none;
-    position: absolute;
-    inset: 0;
-    background: var(--bg-color);
-    border-radius: inherit;
-    z-index: 2;
-    filter: url(#remove-black);
-    margin: var(--overlay-margin, 0);
-    font-size: var(--overlay-font-size, inherit);
 }
 
 .overlay-text {
-    position: absolute;
-    width: 100%;
-    height: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -119,12 +113,40 @@ canvas {
     margin: 0;
 }
 
+/* When text-mask is active: overlay-text drives the size */
 :host([text-mask]) .overlay {
     display: block;
+    position: relative;
+    z-index: 2;
+    background: var(--bg-color);
+    border-radius: inherit;
+    filter: url(#remove-black);
+    margin: var(--overlay-margin, 0);
+    font-size: var(--overlay-font-size, inherit);
+}
+
+:host([text-mask]) .overlay-text {
+    position: relative;
+    padding: 12px 24px;
+}
+
+:host([text-mask][size="small"]) .overlay-text {
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+:host([text-mask][size="large"]) .overlay-text {
+    padding: 16px 32px;
+    font-size: 1.125rem;
+}
+
+:host([text-mask][size="extra-large"]) .overlay-text {
+    padding: 32px 64px;
+    font-size: 2.25rem;
 }
 
 :host([text-mask]) .content {
-    visibility: hidden;
+    display: none;
 }
 
 </style>
