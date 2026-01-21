@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shader Button Demo</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            background: #1a1a2e;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #fff;
+        }
+        .has-header {
+            padding-top: 60px;
+        }
+        h1 {
+            text-align: center;
+            padding: 30px 20px 10px 20px;
+            font-size: 1.5rem;
+            color: #e0e0e0;
+        }
+        h2 {
+            padding: 20px 20px 10px 20px;
+            font-size: 1rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section {
+            padding: 10px 20px 30px 20px;
+        }
+
+        .button-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 10px 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .button-label {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: capitalize;
+        }
+
+        /* Shader button base styles */
+        shader-button {
+            min-width: 140px;
+            transition: transform 0.1s ease;
+        }
+
+        /* Different background colors for border mode */
+        .border-demo shader-button {
+            background: #16213e;
+        }
+
+        /* Variant section colors */
+        .variant-demo shader-button[variant="blue"] { background: rgba(0, 100, 255, 0.2); }
+        .variant-demo shader-button[variant="red"] { background: rgba(255, 50, 50, 0.2); }
+        .variant-demo shader-button[variant="purple"] { background: rgba(150, 50, 200, 0.2); }
+        .variant-demo shader-button[variant="green"] { background: rgba(50, 200, 100, 0.2); }
+        .variant-demo shader-button[variant="gold"] { background: rgba(255, 200, 0, 0.2); }
+        .variant-demo shader-button[variant="black"] { background: rgba(50, 50, 50, 0.5); }
+
+        /* Size demo */
+        .size-demo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Hero CTA */
+        .hero-section {
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        /* Interactive demo */
+        .interactive-demo {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 8px;
+        }
+
+        .controls label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        .controls select {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: none;
+            border-radius: 4px;
+            background: #16213e;
+            color: #eee;
+            cursor: pointer;
+        }
+
+        .preview-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .preview-button {
+            min-width: 200px;
+            font-size: 1.1rem;
+        }
+
+        .code-preview {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #8be9fd;
+            white-space: pre-wrap;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+    </style>
+    <link rel="stylesheet" href="css/header.css">
+</head>
+<body class="has-header">
+    <header class="site-header">
+        <a href="/" class="site-logo"><span class="bracket">&lt;</span>STICKERS<span class="bracket">&gt;</span></a>
+        <nav class="site-nav">
+            <a href="/">Playground</a>
+            <a href="/sticker-demo">Component</a>
+            <a href="/variant-demo">Variants</a>
+            <a href="/test-grid">Grid</a>
+            <a href="/size-demo">Sizes</a>
+            <a href="/button-demo" class="active">Buttons</a>
+        </nav>
+    </header>
+
+    <h1>Shader Button Component</h1>
+
+    <!-- Hero CTA -->
+    <div class="section hero-section">
+        <shader-button shader="holographic" mode="border" text-mask animate size="large" style="--overlay-margin: 4px 5px; --overlay-font-size: 2rem;">
+            Get Started
+        </shader-button>
+    </div>
+
+    <!-- All Shaders - Background Mode -->
+    <div class="section">
+        <h2>Shaders (Background Mode)</h2>
+        <div class="button-grid" id="background-grid">
+            <!-- Generated by JS -->
+        </div>
+    </div>
+
+    <!-- All Shaders - Border Mode -->
+    <div class="section border-demo">
+        <h2>Shaders (Border Mode)</h2>
+        <div class="button-grid" id="border-grid">
+            <!-- Generated by JS -->
+        </div>
+    </div>
+
+    <!-- Variants -->
+    <div class="section variant-demo">
+        <h2>Variants (with Holographic)</h2>
+        <div class="button-grid" id="variant-grid">
+            <!-- Generated by JS -->
+        </div>
+    </div>
+
+    <!-- Sizes -->
+    <div class="section">
+        <h2>Sizes</h2>
+        <div class="size-demo">
+            <shader-button shader="foil" size="small">Small</shader-button>
+            <shader-button shader="foil">Default</shader-button>
+            <shader-button shader="foil" size="large">Large</shader-button>
+        </div>
+    </div>
+
+
+    <!-- Interactive Builder -->
+    <div class="section">
+        <h2>Interactive Builder</h2>
+        <div class="interactive-demo">
+            <div class="controls">
+                <label>
+                    Shader
+                    <select id="shader-select"></select>
+                </label>
+                <label>
+                    Mode
+                    <select id="mode-select">
+                        <option value="background">Background</option>
+                        <option value="border">Border</option>
+                    </select>
+                </label>
+                <label>
+                    Variant
+                    <select id="variant-select">
+                        <option value="">None</option>
+                    </select>
+                </label>
+            </div>
+            <div class="preview-area">
+                <shader-button id="preview-button" class="preview-button" shader="holographic">
+                    Preview Button
+                </shader-button>
+                <div class="code-preview" id="code-preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/button-demo.js"></script>
+</body>
+</html>

@@ -96,9 +96,9 @@ void main() {
     // Apply effect mask for variant tint
     float mask = texture(u_effectMask, v_uv).r;
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Overlay text on base texture (white text)
@@ -308,9 +308,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -451,9 +451,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -652,9 +652,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -865,9 +865,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -1003,9 +1003,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -1266,9 +1266,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -1416,9 +1416,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -1578,9 +1578,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
@@ -1767,9 +1767,9 @@ void main() {
     mask = max(mask, textMask);
     finalColor = mix(originalColor, finalColor, mask);
 
-    // Apply variant color: stronger tint (40%) + solid overlay (20%)
+    // Apply variant color: stronger tint (40%) + solid overlay (10%)
     vec3 tintedColor = mix(finalColor, finalColor * u_variantColor, 0.4);
-    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.2);
+    vec3 overlayColor = mix(tintedColor, u_variantColor, 0.1);
     finalColor = mix(finalColor, overlayColor, u_variantActive * mask);
 
     // Add white overlay for text readability (opacity controlled by uniform)
